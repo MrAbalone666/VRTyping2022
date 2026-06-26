@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace VRTyping.Keyboard
 {
@@ -10,6 +12,7 @@ namespace VRTyping.Keyboard
         // 单个探针当前正在进行的一次滑动轨迹。
         class SwipeTrace
         {
+            public readonly List<GesturePoint> gesturePoints = new List<GesturePoint>();
             // 已接受进本次滑动序列的 keyId。
             public readonly List<string> keyIds = new List<string>();
             // 投影到键盘 2D 平面后的轨迹点。
@@ -90,7 +93,7 @@ namespace VRTyping.Keyboard
         [SerializeField]
         [Range(1, 10)]
         // 识别时保留几个候选词。
-        int m_CandidateCount = 3;
+        int m_CandidateCount = 5;
 
         [SerializeField]
         [Min(0.001f)]
@@ -115,6 +118,41 @@ namespace VRTyping.Keyboard
         [SerializeField]
         // 成功识别成单词后是否自动追加空格。
         bool m_AppendSpaceAfterSwipeWord = true;
+
+        [SerializeField]
+        [Tooltip("Runtime recognizer used by swipe mode. If empty, one is found or added automatically.")]
+        SwipeTypingRecognizer m_SwipeRecognizer;
+
+        [SerializeField]
+        [Tooltip("Use the multi-model recognizer first, then fall back to the legacy decoder if needed.")]
+        bool m_UseSwipeTypingRecognizer = true;
+
+        [Header("Candidate Selection")]
+        [SerializeField]
+        [Tooltip("Optional right thumbstick action. If empty, the right-hand XR primary2DAxis is used.")]
+        InputActionReference m_CandidateMoveAction;
+
+        [SerializeField]
+        [Tooltip("Optional right trigger action used to confirm the highlighted candidate. If empty, the right-hand XR trigger is used.")]
+        InputActionReference m_CandidateConfirmAction;
+
+        [SerializeField]
+        [Range(0.1f, 1f)]
+        float m_CandidateMoveThreshold = 0.55f;
+
+        [SerializeField]
+        [Min(0.05f)]
+        float m_CandidateMoveRepeatDelay = 0.25f;
+
+        [SerializeField]
+        [Range(0.1f, 1f)]
+        float m_CandidateConfirmThreshold = 0.5f;
+
+        [SerializeField]
+        Color m_CandidateNormalColor = Color.white;
+
+        [SerializeField]
+        Color m_CandidateSelectedColor = new Color(0.2f, 0.75f, 1f, 1f);
 
         [Header("Recognition Weights")]
         // 下面这些权重控制候选词评分中各项因素的重要程度，分数越低越匹配。
@@ -152,17 +190,27 @@ namespace VRTyping.Keyboard
         // 正在进行中的 swipe，按探针碰撞体区分。
         readonly Dictionary<Collider, SwipeTrace> m_ActiveTraces = new Dictionary<Collider, SwipeTrace>();
 
+        readonly List<SwipeCandidate> m_PendingSwipeCandidates = new List<SwipeCandidate>(5);
+        readonly List<UnityEngine.XR.InputDevice> m_RightHandDevices = new List<UnityEngine.XR.InputDevice>(2);
+        int m_SelectedCandidateIndex;
+        float m_NextCandidateMoveTime;
+        bool m_CandidateConfirmWasHeld;
+        bool m_EnabledCandidateMoveAction;
+        bool m_EnabledCandidateConfirmAction;
+
         SwipeKeyboardLayout m_KeyboardLayout;
         SwipeTemplateDatabase m_TemplateDatabase;
         SwipeWordDecoder m_WordDecoder;
 
         public string currentText => VRKeyboardTextComposer.GetText(m_OutputField);
+        public bool hasPendingSwipeCandidates => m_PendingSwipeCandidates.Count > 0;
 
         void OnEnable()
         {
             // 启用时刷新键盘/探针引用，并加载识别数据库。
             RefreshReferences();
             LoadTemplateDatabase();
+            EnableCandidateInputActions();
             ClearPreview();
         }
 
@@ -170,6 +218,7 @@ namespace VRTyping.Keyboard
         {
             // 禁用时丢弃未完成的 swipe，避免下次启用后提交旧轨迹。
             m_ActiveTraces.Clear();
+            DisableCandidateInputActions();
             ClearPreview();
         }
 
@@ -180,6 +229,12 @@ namespace VRTyping.Keyboard
                 RefreshReferences();
 
             // 每个探针独立更新自己的滑动轨迹。
+            if (m_PendingSwipeCandidates.Count > 0)
+            {
+                UpdateCandidateControllerSelection();
+                return;
+            }
+
             for (var i = m_ProbeColliders.Count - 1; i >= 0; i--)
             {
                 var probeCollider = m_ProbeColliders[i];
@@ -198,6 +253,170 @@ namespace VRTyping.Keyboard
         public void ClearText()
         {
             VRKeyboardTextComposer.ClearText(m_OutputField);
+        }
+
+        void EnableCandidateInputActions()
+        {
+            var moveAction = m_CandidateMoveAction != null ? m_CandidateMoveAction.action : null;
+            if (moveAction != null && !moveAction.enabled)
+            {
+                moveAction.Enable();
+                m_EnabledCandidateMoveAction = true;
+            }
+
+            var confirmAction = m_CandidateConfirmAction != null ? m_CandidateConfirmAction.action : null;
+            if (confirmAction != null && !confirmAction.enabled)
+            {
+                confirmAction.Enable();
+                m_EnabledCandidateConfirmAction = true;
+            }
+        }
+
+        void DisableCandidateInputActions()
+        {
+            var moveAction = m_CandidateMoveAction != null ? m_CandidateMoveAction.action : null;
+            if (m_EnabledCandidateMoveAction && moveAction != null && moveAction.enabled)
+                moveAction.Disable();
+
+            var confirmAction = m_CandidateConfirmAction != null ? m_CandidateConfirmAction.action : null;
+            if (m_EnabledCandidateConfirmAction && confirmAction != null && confirmAction.enabled)
+                confirmAction.Disable();
+
+            m_EnabledCandidateMoveAction = false;
+            m_EnabledCandidateConfirmAction = false;
+        }
+
+        void UpdateCandidateControllerSelection()
+        {
+            var axis = ReadCandidateMoveAxis();
+            if (Mathf.Abs(axis.x) >= m_CandidateMoveThreshold && Time.time >= m_NextCandidateMoveTime)
+            {
+                MoveSelectedCandidate(axis.x > 0f ? 1 : -1);
+                m_NextCandidateMoveTime = Time.time + m_CandidateMoveRepeatDelay;
+            }
+            else if (Mathf.Abs(axis.x) < m_CandidateMoveThreshold * 0.5f)
+            {
+                m_NextCandidateMoveTime = 0f;
+            }
+
+            var confirmHeld = ReadCandidateConfirmHeld();
+            if (confirmHeld && !m_CandidateConfirmWasHeld)
+                CommitPendingCandidate(m_SelectedCandidateIndex);
+
+            m_CandidateConfirmWasHeld = confirmHeld;
+        }
+
+        void MoveSelectedCandidate(int delta)
+        {
+            if (m_PendingSwipeCandidates.Count == 0)
+                return;
+
+            m_SelectedCandidateIndex = Mathf.Clamp(
+                m_SelectedCandidateIndex + delta,
+                0,
+                m_PendingSwipeCandidates.Count - 1);
+            RefreshCandidatePreview();
+        }
+
+        Vector2 ReadCandidateMoveAxis()
+        {
+            var action = m_CandidateMoveAction != null ? m_CandidateMoveAction.action : null;
+            if (action != null)
+            {
+                try
+                {
+                    return action.ReadValue<Vector2>();
+                }
+                catch
+                {
+                    return Vector2.zero;
+                }
+            }
+
+            var device = GetRightHandDevice();
+            if (device.isValid &&
+                device.TryGetFeatureValue(UnityEngine.XR.CommonUsages.primary2DAxis, out Vector2 axis))
+            {
+                return axis;
+            }
+
+            return Vector2.zero;
+        }
+
+        bool ReadCandidateConfirmHeld()
+        {
+            var action = m_CandidateConfirmAction != null ? m_CandidateConfirmAction.action : null;
+            if (action != null)
+            {
+                try
+                {
+                    return action.ReadValue<float>() >= m_CandidateConfirmThreshold;
+                }
+                catch
+                {
+                    return action.IsPressed();
+                }
+            }
+
+            var device = GetRightHandDevice();
+            if (!device.isValid)
+                return false;
+
+            if (device.TryGetFeatureValue(UnityEngine.XR.CommonUsages.triggerButton, out bool triggerButton) &&
+                triggerButton)
+            {
+                return true;
+            }
+
+            return device.TryGetFeatureValue(UnityEngine.XR.CommonUsages.trigger, out float trigger) &&
+                   trigger >= m_CandidateConfirmThreshold;
+        }
+
+        UnityEngine.XR.InputDevice GetRightHandDevice()
+        {
+            m_RightHandDevices.Clear();
+            UnityEngine.XR.InputDevices.GetDevicesWithCharacteristics(
+                UnityEngine.XR.InputDeviceCharacteristics.Right |
+                UnityEngine.XR.InputDeviceCharacteristics.Controller,
+                m_RightHandDevices);
+
+            for (var i = 0; i < m_RightHandDevices.Count; i++)
+            {
+                if (m_RightHandDevices[i].isValid)
+                    return m_RightHandDevices[i];
+            }
+
+            return default(UnityEngine.XR.InputDevice);
+        }
+
+        public bool TryHandleCandidateSelection(string keyId)
+        {
+            if (string.IsNullOrEmpty(keyId) || m_PendingSwipeCandidates.Count == 0)
+                return false;
+
+            if (keyId.Length == 1 && char.IsDigit(keyId[0]))
+            {
+                var index = keyId[0] - '1';
+                if (index >= 0 && index < m_PendingSwipeCandidates.Count)
+                {
+                    CommitPendingCandidate(index);
+                    return true;
+                }
+            }
+
+            if (keyId == "Space" || keyId == "Enter")
+            {
+                CommitPendingCandidate(0);
+                return true;
+            }
+
+            if (keyId == "Back" || keyId == "ESC")
+            {
+                ClearPreview();
+                return true;
+            }
+
+            return false;
         }
 
         public void RefreshReferences()
@@ -226,6 +445,7 @@ namespace VRTyping.Keyboard
             }
 
             SwipeKeyboardLayout.TryCreate(transform, m_Keys, out m_KeyboardLayout);
+            ConfigureSwipeRecognizer();
         }
 
         public bool TryGetKeyboardLayout(out SwipeKeyboardLayout layout)
@@ -260,6 +480,29 @@ namespace VRTyping.Keyboard
             m_WordDecoder = new SwipeWordDecoder(m_TemplateDatabase);
         }
 
+        void ConfigureSwipeRecognizer()
+        {
+            if (!m_UseSwipeTypingRecognizer)
+                return;
+
+            if (m_SwipeRecognizer == null)
+                m_SwipeRecognizer = GetComponent<SwipeTypingRecognizer>();
+
+            if (m_SwipeRecognizer == null)
+                m_SwipeRecognizer = gameObject.AddComponent<SwipeTypingRecognizer>();
+
+            if (m_KeyboardLayout != null)
+                m_SwipeRecognizer.SetKeyboardLayout(m_KeyboardLayout);
+
+            if (m_TemplateWordList != null)
+            {
+                var entries = m_TemplateWordList.text.Split(
+                    new[] { '\r', '\n' },
+                    StringSplitOptions.RemoveEmptyEntries);
+                m_SwipeRecognizer.SetVocabulary(entries);
+            }
+        }
+
         void UpdateTraceForProbe(Collider probeCollider)
         {
             // 如果配置为必须按住扳机，松开时立即提交当前探针的轨迹。
@@ -281,12 +524,14 @@ namespace VRTyping.Keyboard
                 m_ActiveTraces.Add(probeCollider, trace);
             }
 
+            // Swipe recognition needs the full motion path, including gaps between keys.
+            AddTrajectoryPoint(trace, probeCollider.bounds.center);
+
             if (touchedKey != null)
             {
                 var keyId = VRKeyboardKeyUtility.GetKeyId(touchedKey);
                 // 仍在接触按键，取消离开倒计时并继续记录轨迹。
                 trace.releaseTime = float.PositiveInfinity;
-                AddTrajectoryPoint(trace, probeCollider.bounds.center);
 
                 if (trace.activeKeyId != keyId)
                 {
@@ -331,6 +576,7 @@ namespace VRTyping.Keyboard
             }
 
             trace.points.Add(point);
+            trace.gesturePoints.Add(new GesturePoint(point, Time.time));
         }
 
         void TryAcceptTouchedKey(SwipeTrace trace, VRKeyboardKey touchedKey, Collider probeCollider)
@@ -394,21 +640,54 @@ namespace VRTyping.Keyboard
 
             // 移除进行中轨迹，然后提交文字并清空预览。
             m_ActiveTraces.Remove(probeCollider);
-            CommitTrace(trace);
-            ClearPreview();
+            var keepPreview = CommitTrace(trace);
+            if (!keepPreview)
+                ClearPreview();
         }
 
-        void CommitTrace(SwipeTrace trace)
+        bool CommitTrace(SwipeTrace trace)
         {
             var compactKeys = new List<string>(trace.keyIds);
             if (compactKeys.Count == 0)
-                return;
+                return false;
+
+            if (compactKeys.Count == 1 && TryHandleCandidateSelection(compactKeys[0]))
+                return false;
 
             // 先把滑过的 keyId 转成字母序列，作为预览和无法识别时的兜底输入。
             var sequence = BuildSwipeSequence(compactKeys);
             if (sequence.Length > 0)
             {
                 var committedText = sequence;
+                if (sequence.Length > 1 && TryRecognizeWord(trace, out var swipeCandidates))
+                {
+                    var best = swipeCandidates[0];
+                    if (best.confidence < m_SwipeRecognizer.minAutoCommitConfidence)
+                    {
+                        ShowCandidatePreview(swipeCandidates);
+                        if (m_LogSwipeSequence)
+                            Debug.Log("Swipe sequence " + sequence + " held for candidates. Best=" + best.word + " confidence=" + best.confidence.ToString("F2"), this);
+                        return true;
+                    }
+
+                    committedText = VRKeyboardTextComposer.ApplyLetterCase(
+                        best.word,
+                        m_CapsLockEnabled,
+                        m_ShiftEnabled);
+
+                    if (m_LogSwipeSequence)
+                        Debug.Log("Swipe sequence " + sequence + " committed as " + committedText + " confidence=" + best.confidence.ToString("F2"), this);
+
+                    if (m_AppendSpaceAfterSwipeWord)
+                        committedText += " ";
+                    VRKeyboardTextComposer.AppendText(m_OutputField, committedText);
+
+                    if (m_ShiftEnabled)
+                        m_ShiftEnabled = false;
+
+                    return false;
+                }
+
                 List<SwipeWordCandidate> candidates = null;
                 // 多字母 swipe 尝试走模板识别，取分数最低的候选词。
                 if (sequence.Length > 1 && TryDecodeWord(trace, compactKeys, out candidates))
@@ -428,7 +707,7 @@ namespace VRTyping.Keyboard
                 if (m_ShiftEnabled)
                     m_ShiftEnabled = false;
 
-                return;
+                return false;
             }
 
             // 如果最终只有一个键，并且它不是普通字母序列，则按普通键处理，例如 Back/Space。
@@ -440,6 +719,75 @@ namespace VRTyping.Keyboard
                     ref m_ShiftEnabled,
                     m_UseTabCharacter,
                     m_TabSpaces);
+
+            return false;
+        }
+
+        bool TryRecognizeWord(SwipeTrace trace, out List<SwipeCandidate> candidates)
+        {
+            candidates = null;
+            if (!m_UseSwipeTypingRecognizer || m_SwipeRecognizer == null || trace == null || trace.gesturePoints.Count < 2)
+                return false;
+
+            candidates = m_SwipeRecognizer.Recognize(trace.gesturePoints, m_CandidateCount);
+            return candidates != null && candidates.Count > 0;
+        }
+
+        void ShowCandidatePreview(List<SwipeCandidate> candidates)
+        {
+            if (m_SwipePreviewLabel == null || candidates == null || candidates.Count == 0)
+                return;
+
+            m_PendingSwipeCandidates.Clear();
+            m_SelectedCandidateIndex = 0;
+            m_NextCandidateMoveTime = 0f;
+            m_CandidateConfirmWasHeld = false;
+            for (var i = 0; i < candidates.Count; i++)
+                m_PendingSwipeCandidates.Add(candidates[i]);
+
+            m_SelectedCandidateIndex = 0;
+            m_NextCandidateMoveTime = 0f;
+            m_CandidateConfirmWasHeld = ReadCandidateConfirmHeld();
+            RefreshCandidatePreview();
+        }
+
+        void RefreshCandidatePreview()
+        {
+            if (m_SwipePreviewLabel == null)
+                return;
+
+            var words = new List<string>(m_PendingSwipeCandidates.Count);
+            var selectedColor = ColorUtility.ToHtmlStringRGBA(m_CandidateSelectedColor);
+            var normalColor = ColorUtility.ToHtmlStringRGBA(m_CandidateNormalColor);
+            for (var i = 0; i < m_PendingSwipeCandidates.Count; i++)
+            {
+                var color = i == m_SelectedCandidateIndex ? selectedColor : normalColor;
+                words.Add("<color=#" + color + ">" + (i + 1).ToString() + ":" + m_PendingSwipeCandidates[i].word + "</color>");
+            }
+
+            m_SwipePreviewLabel.richText = true;
+            m_SwipePreviewLabel.text = string.Join("  ", words);
+        }
+
+        void CommitPendingCandidate(int index)
+        {
+            if (index < 0 || index >= m_PendingSwipeCandidates.Count)
+                return;
+
+            var committedText = VRKeyboardTextComposer.ApplyLetterCase(
+                m_PendingSwipeCandidates[index].word,
+                m_CapsLockEnabled,
+                m_ShiftEnabled);
+
+            if (m_AppendSpaceAfterSwipeWord)
+                committedText += " ";
+
+            VRKeyboardTextComposer.AppendText(m_OutputField, committedText);
+
+            if (m_ShiftEnabled)
+                m_ShiftEnabled = false;
+
+            ClearPreview();
         }
 
         bool TryDecodeWord(SwipeTrace trace, List<string> compactKeys, out List<SwipeWordCandidate> candidates)
@@ -580,7 +928,13 @@ namespace VRTyping.Keyboard
 
         void ClearPreview()
         {
+            m_PendingSwipeCandidates.Clear();
+
             // 没有进行中的 swipe 时清空预览。
+            m_SelectedCandidateIndex = 0;
+            m_NextCandidateMoveTime = 0f;
+            m_CandidateConfirmWasHeld = false;
+
             if (m_SwipePreviewLabel != null)
                 m_SwipePreviewLabel.text = string.Empty;
         }

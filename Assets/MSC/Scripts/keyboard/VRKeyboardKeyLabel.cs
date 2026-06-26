@@ -69,8 +69,8 @@ namespace VRTyping.Keyboard
             text.color = new Color(0.94f, 0.97f, 1f, 1f);
             text.fontStyle = FontStyles.Bold;
             text.enableAutoSizing = true;
-            text.fontSizeMin = 0.08f;
-            text.fontSizeMax = 1.2f;
+            text.fontSizeMin = 2.0f;
+            text.fontSizeMax = 3.0f;
             text.enableWordWrapping = false;
             text.overflowMode = TextOverflowModes.Overflow;
             text.raycastTarget = false;

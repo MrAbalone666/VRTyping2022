@@ -28,6 +28,7 @@ namespace VRTyping.Keyboard
 
         // 记录每个按键注册过的监听器，方便禁用控制器时完整移除，避免重复绑定。
         readonly Dictionary<VRKeyboardKey, UnityAction> m_KeyListeners = new Dictionary<VRKeyboardKey, UnityAction>();
+        VRKeyboardSwipeInput m_SwipeInput;
 
         // 外部可读取当前输入框里的文字。
         public string currentText => VRKeyboardTextComposer.GetText(m_OutputField);
@@ -35,6 +36,7 @@ namespace VRTyping.Keyboard
         void OnEnable()
         {
             // 控制器启用时，扫描子物体中的键并绑定事件。
+            m_SwipeInput = GetComponent<VRKeyboardSwipeInput>();
             RegisterKeys();
         }
 
@@ -89,6 +91,9 @@ namespace VRTyping.Keyboard
             Debug.Log($"Resolved keyId: {keyId}");
 
             // 交给文本组合器处理功能键、大小写、符号映射，并写入输出框。
+            if (m_SwipeInput != null && m_SwipeInput.TryHandleCandidateSelection(keyId))
+                return;
+
             VRKeyboardTextComposer.HandleKey(
                 keyId,
                 m_OutputField,
