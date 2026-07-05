@@ -152,6 +152,14 @@ namespace VRTyping.Keyboard
             ReleaseCurrentPressedKey();
             ClearHighlightedKey();
             ResetDwellState();
+            m_CurrentPressDepth = 0f;
+
+            if (m_SphereCollider != null)
+                m_SphereCollider.enabled = false;
+
+            m_LastColliderActive = false;
+            SetVisualActive(false);
+            m_LastVisualActive = false;
 
             if (!m_EnabledPressAction)
                 return;
