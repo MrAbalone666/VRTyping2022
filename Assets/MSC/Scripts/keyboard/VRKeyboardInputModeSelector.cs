@@ -8,7 +8,10 @@ namespace VRTyping.Keyboard
         Swipe,
         StickTap,
         Dwell,
+        // HandTouch：只使用左右手食指指尖作为按键触碰点，适合普通手部点击。
         HandTouch,
+        // HandTouch10：十个手指都生成触碰探针，任意手指都可以按键。
+        HandTouch10,
     }
 
     public class VRKeyboardInputModeSelector : MonoBehaviour
@@ -20,6 +23,7 @@ namespace VRTyping.Keyboard
         [SerializeField] VRKeyboardSwipeInput m_SwipeInput;
         [SerializeField] VRKeyboardRayProbeFollower m_RayProbeInput;
         [SerializeField] VRKeyboardStickProbeFollower m_StickTapInput;
+        // 手部输入统一由 VRKeyboardHandProbeFollower 管理，模式切换这里只负责启停和十指开关。
         [SerializeField] VRKeyboardHandProbeFollower m_HandTouchInput;
 
         public VRKeyboardInputMode currentInputMode => m_InputMode;
@@ -69,7 +73,14 @@ namespace VRTyping.Keyboard
 
         public void SetHandTouchMode()
         {
+            // UI 或调试按钮可以调用这个方法切到“左右食指触碰”模式。
             SetInputMode(VRKeyboardInputMode.HandTouch);
+        }
+
+        public void SetHandTouch10Mode()
+        {
+            // UI 或调试按钮可以调用这个方法切到“十指触碰”模式。
+            SetInputMode(VRKeyboardInputMode.HandTouch10);
         }
 
         void CacheInputComponents()
@@ -92,11 +103,13 @@ namespace VRTyping.Keyboard
 
         void ApplyMode()
         {
+            // 手部触碰最终仍然是“离散按键按下”，所以需要保留 VRKeyboardController 的按键事件处理。
             var useDiscreteKeyPress =
                 m_InputMode == VRKeyboardInputMode.Press ||
                 m_InputMode == VRKeyboardInputMode.StickTap ||
                 m_InputMode == VRKeyboardInputMode.Dwell ||
-                m_InputMode == VRKeyboardInputMode.HandTouch;
+                m_InputMode == VRKeyboardInputMode.HandTouch ||
+                m_InputMode == VRKeyboardInputMode.HandTouch10;
 
             if (m_PressInput != null)
                 m_PressInput.enabled = useDiscreteKeyPress;
@@ -106,8 +119,10 @@ namespace VRTyping.Keyboard
 
             if (m_RayProbeInput != null)
             {
+                // HandTouch/HandTouch10 使用指尖探针，不再使用控制器射线探针，避免两套输入同时按键。
                 var enableRayProbe = m_InputMode != VRKeyboardInputMode.StickTap &&
-                    m_InputMode != VRKeyboardInputMode.HandTouch;
+                    m_InputMode != VRKeyboardInputMode.HandTouch &&
+                    m_InputMode != VRKeyboardInputMode.HandTouch10;
                 m_RayProbeInput.enabled = enableRayProbe;
 
                 if (enableRayProbe)
@@ -125,7 +140,13 @@ namespace VRTyping.Keyboard
                 m_StickTapInput.enabled = m_InputMode == VRKeyboardInputMode.StickTap;
 
             if (m_HandTouchInput != null)
-                m_HandTouchInput.enabled = m_InputMode == VRKeyboardInputMode.HandTouch;
+            {
+                // HandTouch 与 HandTouch10 共用同一个脚本，只通过 SetUseAllFingerTips 区分“食指”还是“十指”。
+                var enableHandTouch = m_InputMode == VRKeyboardInputMode.HandTouch ||
+                    m_InputMode == VRKeyboardInputMode.HandTouch10;
+                m_HandTouchInput.SetUseAllFingerTips(m_InputMode == VRKeyboardInputMode.HandTouch10);
+                m_HandTouchInput.enabled = enableHandTouch;
+            }
         }
     }
 }

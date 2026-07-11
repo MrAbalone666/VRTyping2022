@@ -103,6 +103,8 @@ namespace VRTyping.Keyboard
         public BoxCollider pressCollider => m_PressCollider;
         public Transform pressTarget => m_PressTarget;
         public VRKeyboardPressAxis pressAxis => m_PressAxis;
+        // HandTouch 防穿透会读取这个值，确保指尖/手模型不会超过单个按键允许的最大下压距离。
+        public float maxPressDistance => m_MaxPressDistance;
 
         void Reset()
         {
