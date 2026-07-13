@@ -149,6 +149,7 @@ namespace VRTyping.Keyboard
             // 一个 HandProbe 就是一个能触发 VRKeyboardKey 的球形触碰点。
             public Transform root;
             public SphereCollider collider;
+            public VRKeyboardPressProbe pressProbe;
             public Renderer[] renderers;
             public HandControls controls;
             public bool active;
@@ -258,6 +259,18 @@ namespace VRTyping.Keyboard
                 ApplyHandVisualOffset(ref m_LeftHandVisualState, Vector3.zero);
                 ApplyHandVisualOffset(ref m_RightHandVisualState, Vector3.zero);
             }
+        }
+
+        public void RefreshProbesNow()
+        {
+            EnsureProbeObjects();
+            RefreshHandDevices();
+            RefreshFingerTargets();
+            RefreshHandPoseSpace();
+            RefreshControllerVisuals();
+            UpdateHandProbes(true, m_UseLeftHand);
+            UpdateHandProbes(false, m_UseRightHand);
+            UpdateControllerVisuals();
         }
 
         void LateUpdate()
@@ -999,10 +1012,14 @@ namespace VRTyping.Keyboard
                 probe = new HandProbe { root = probeTransform };
 
             var probeObjectRef = probeTransform.gameObject;
-            if (probeObjectRef.GetComponent<VRKeyboardPressProbe>() == null)
+            probe.pressProbe = probeObjectRef.GetComponent<VRKeyboardPressProbe>();
+            if (probe.pressProbe == null)
+                probe.pressProbe = probeObjectRef.AddComponent<VRKeyboardPressProbe>();
+            if (probe.pressProbe == null)
                 // VRKeyboardKey 只接受带 VRKeyboardPressProbe 标记的碰撞体。
                 probeObjectRef.AddComponent<VRKeyboardPressProbe>();
 
+            probe.pressProbe = probeObjectRef.GetComponent<VRKeyboardPressProbe>();
             probe.collider = probeObjectRef.GetComponent<SphereCollider>();
             if (probe.collider == null)
                 probe.collider = probeObjectRef.AddComponent<SphereCollider>();
@@ -1070,6 +1087,9 @@ namespace VRTyping.Keyboard
 
             if (probe.collider != null)
                 probe.collider.enabled = active;
+
+            if (probe.pressProbe != null)
+                probe.pressProbe.enabled = active;
 
             if (probe.renderers != null)
             {

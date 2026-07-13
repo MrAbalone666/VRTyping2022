@@ -85,6 +85,7 @@ namespace VRTyping.Keyboard
         float m_DwellDuration = 0.6f;
 
         SphereCollider m_SphereCollider;
+        VRKeyboardPressProbe m_PressProbe;
         Rigidbody m_Rigidbody;
         Renderer[] m_SelfRenderers;
         // NearFarInteractor 实现了该接口，用来读取射线曲线的终点和法线。
@@ -119,6 +120,7 @@ namespace VRTyping.Keyboard
 
             m_CurveProvider = m_NearFarInteractor;
             m_SphereCollider = GetComponent<SphereCollider>();
+            m_PressProbe = GetComponent<VRKeyboardPressProbe>();
             m_Rigidbody = GetComponent<Rigidbody>();
             m_SelfRenderers = GetComponentsInChildren<Renderer>(true);
 
@@ -137,6 +139,9 @@ namespace VRTyping.Keyboard
 
         void OnEnable()
         {
+            SetPressProbeActive(true);
+            ResetProbeState(true);
+
             // 如果输入 action 还没启用，由本脚本临时启用，并在 OnDisable 中恢复。
             var action = m_PressValueAction != null ? m_PressValueAction.action : null;
             if (action != null && !action.enabled)
@@ -148,6 +153,8 @@ namespace VRTyping.Keyboard
 
         void OnDisable()
         {
+            SetPressProbeActive(false);
+
             // 禁用时释放所有对按键的外部按压/高亮控制。
             ReleaseCurrentPressedKey();
             ClearHighlightedKey();
@@ -181,6 +188,41 @@ namespace VRTyping.Keyboard
             ReleaseCurrentPressedKey();
             m_CurrentPressDepth = 0f;
             ResetDwellState();
+        }
+
+        void SetPressProbeActive(bool active)
+        {
+            if (m_PressProbe == null)
+                m_PressProbe = GetComponent<VRKeyboardPressProbe>();
+
+            if (m_PressProbe != null)
+                m_PressProbe.enabled = active;
+        }
+
+        public void ResetProbeState(bool showAtRayEnd)
+        {
+            if (m_NearFarInteractor == null)
+                m_NearFarInteractor = GetComponentInParent<NearFarInteractor>();
+
+            m_CurveProvider = m_NearFarInteractor;
+            ReleaseCurrentPressedKey();
+            ClearHighlightedKey();
+            ResetDwellState();
+            m_CurrentPressDepth = 0f;
+
+            if (m_SphereCollider != null)
+                m_SphereCollider.enabled = false;
+
+            m_LastColliderActive = false;
+
+            if (showAtRayEnd && TryGetCurrentRayEndPosition(out var rayEndPosition))
+            {
+                MoveProbe(rayEndPosition, true, false);
+                return;
+            }
+
+            SetVisualActive(false);
+            m_LastVisualActive = false;
         }
 
         public bool IsSwipeActivationHeld()
@@ -353,6 +395,23 @@ namespace VRTyping.Keyboard
 
             fallbackPosition = origin.position + origin.forward * m_NoHitDistance;
             return true;
+        }
+
+        bool TryGetCurrentRayEndPosition(out Vector3 rayEndPosition)
+        {
+            rayEndPosition = transform.position;
+
+            if (m_CurveProvider != null)
+            {
+                var endPointType = m_CurveProvider.TryGetCurveEndPoint(out var endPoint);
+                if (endPointType != EndPointType.None)
+                {
+                    rayEndPosition = endPoint;
+                    return true;
+                }
+            }
+
+            return TryGetFallbackPosition(out rayEndPosition);
         }
 
         float GetPressValue01()

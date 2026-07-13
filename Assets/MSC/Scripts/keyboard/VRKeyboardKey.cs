@@ -157,7 +157,7 @@ namespace VRTyping.Keyboard
 
         void OnDisable()
         {
-            ClearDwellProgress();
+            ResetInteractionState();
         }
 
         void OnValidate()
@@ -252,6 +252,21 @@ namespace VRTyping.Keyboard
             m_ExternalHighlightProgress = -1f;
         }
 
+        public void ResetInteractionState()
+        {
+            m_ActivePressColliders.Clear();
+            m_CurrentPressDistance = 0f;
+            m_ExternalPressDistance = -1f;
+            m_ExternalHighlightProgress = -1f;
+            m_CurrentHighlightProgress = -1f;
+            m_IsPressed = false;
+
+            if (m_PressTarget != null)
+                m_PressTarget.localPosition = m_InitialLocalPosition;
+
+            UpdateHighlightProgress(0f);
+        }
+
         void OnTriggerEnter(Collider other)
         {
             // 只接受带 VRKeyboardPressProbe 的对象，避免其他碰撞体误触键盘。
@@ -269,7 +284,11 @@ namespace VRTyping.Keyboard
 
         bool IsValidPressCollider(Collider other)
         {
-            return other != null && other.GetComponentInParent<VRKeyboardPressProbe>() != null;
+            if (other == null)
+                return false;
+
+            var probe = other.GetComponentInParent<VRKeyboardPressProbe>();
+            return probe != null && probe.isActiveAndEnabled;
         }
 
         float ComputeTargetPressDistance()
@@ -283,7 +302,7 @@ namespace VRTyping.Keyboard
             {
                 var other = m_ActivePressColliders[i];
                 // 清理已经销毁或失活的碰撞体，避免列表长期残留无效引用。
-                if (other == null || !other.gameObject.activeInHierarchy)
+                if (other == null || !other.enabled || !other.gameObject.activeInHierarchy || !IsValidPressCollider(other))
                 {
                     m_ActivePressColliders.RemoveAt(i);
                     continue;

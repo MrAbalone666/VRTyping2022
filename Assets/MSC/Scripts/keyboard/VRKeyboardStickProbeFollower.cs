@@ -98,6 +98,7 @@ namespace VRTyping.Keyboard
         public StickVisualAxis m_StickVisualAxis = StickVisualAxis.Z;
 
         SphereCollider m_SphereCollider;
+        VRKeyboardPressProbe m_PressProbe;
         Rigidbody m_Rigidbody;
         Renderer[] m_SelfRenderers;
         // 记录上一次显示/碰撞状态，避免每帧重复 SetActive 或 enabled。
@@ -123,6 +124,7 @@ namespace VRTyping.Keyboard
         void Awake()
         {
             m_SphereCollider = GetComponent<SphereCollider>();
+            m_PressProbe = GetComponent<VRKeyboardPressProbe>();
             m_Rigidbody = GetComponent<Rigidbody>();
             m_SelfRenderers = GetComponentsInChildren<Renderer>(true);
 
@@ -148,6 +150,8 @@ namespace VRTyping.Keyboard
 
         void OnEnable()
         {
+            SetPressProbeActive(true);
+
             // 如果长度调节 action 没开，由本脚本临时启用。
             var action = m_LengthAdjustAction != null ? m_LengthAdjustAction.action : null;
             if (action != null && !action.enabled)
@@ -163,6 +167,8 @@ namespace VRTyping.Keyboard
 
         void OnDisable()
         {
+            SetPressProbeActive(false);
+
             // 禁用时隐藏可视物并停用碰撞，避免留在场景里继续触发按键。
             SetColliderActive(false);
             SetVisualActive(false);
@@ -175,6 +181,15 @@ namespace VRTyping.Keyboard
                 action.Disable();
 
             m_EnabledLengthAdjustAction = false;
+        }
+
+        void SetPressProbeActive(bool active)
+        {
+            if (m_PressProbe == null)
+                m_PressProbe = GetComponent<VRKeyboardPressProbe>();
+
+            if (m_PressProbe != null)
+                m_PressProbe.enabled = active;
         }
 
         void LateUpdate()
@@ -293,13 +308,13 @@ namespace VRTyping.Keyboard
                 return;
 
             // 优先开关显式指定的可视子物体；没有时退回到开关自身所有 Renderer。
-            if (m_ProbeVisual != null)
+            if (m_ProbeVisual != null && m_ProbeVisual != transform)
                 m_ProbeVisual.gameObject.SetActive(active);
 
-            if (m_StickVisual != null)
+            if (m_StickVisual != null && m_StickVisual != transform)
                 m_StickVisual.gameObject.SetActive(active);
 
-            if (m_ProbeVisual == null && m_StickVisual == null)
+            if (m_ProbeVisual == null || m_ProbeVisual == transform)
                 SetRendererState(m_SelfRenderers, active);
 
             m_LastVisualActive = active;

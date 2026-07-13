@@ -137,6 +137,10 @@ namespace VRTyping.Keyboard
         InputActionReference m_CandidateConfirmAction;
 
         [SerializeField]
+        [Tooltip("Show the candidate list after a recognized swipe instead of immediately committing the best match.")]
+        bool m_ShowCandidatesAfterSwipe = true;
+
+        [SerializeField]
         [Range(0.1f, 1f)]
         float m_CandidateMoveThreshold = 0.55f;
 
@@ -238,7 +242,7 @@ namespace VRTyping.Keyboard
             for (var i = m_ProbeColliders.Count - 1; i >= 0; i--)
             {
                 var probeCollider = m_ProbeColliders[i];
-                if (probeCollider == null || !probeCollider.gameObject.activeInHierarchy)
+                if (probeCollider == null || !probeCollider.enabled || !probeCollider.gameObject.activeInHierarchy || !IsProbeActive(probeCollider))
                 {
                     m_ProbeColliders.RemoveAt(i);
                     continue;
@@ -253,6 +257,15 @@ namespace VRTyping.Keyboard
         public void ClearText()
         {
             VRKeyboardTextComposer.ClearText(m_OutputField);
+        }
+
+        bool IsProbeActive(Collider probeCollider)
+        {
+            if (probeCollider == null)
+                return false;
+
+            var probe = probeCollider.GetComponentInParent<VRKeyboardPressProbe>();
+            return probe != null && probe.isActiveAndEnabled;
         }
 
         void EnableCandidateInputActions()
@@ -435,11 +448,14 @@ namespace VRTyping.Keyboard
             var probes = FindObjectsOfType<VRKeyboardPressProbe>(true);
             for (var i = 0; i < probes.Length; i++)
             {
+                if (probes[i] == null || !probes[i].isActiveAndEnabled)
+                    continue;
+
                 var colliders = probes[i].GetComponentsInChildren<Collider>(true);
                 for (var j = 0; j < colliders.Length; j++)
                 {
                     var collider = colliders[j];
-                    if (collider != null && !m_ProbeColliders.Contains(collider))
+                    if (collider != null && collider.enabled && collider.gameObject.activeInHierarchy && !m_ProbeColliders.Contains(collider))
                         m_ProbeColliders.Add(collider);
                 }
             }
@@ -662,7 +678,7 @@ namespace VRTyping.Keyboard
                 if (sequence.Length > 1 && TryRecognizeWord(trace, out var swipeCandidates))
                 {
                     var best = swipeCandidates[0];
-                    if (best.confidence < m_SwipeRecognizer.minAutoCommitConfidence)
+                    if (m_ShowCandidatesAfterSwipe || best.confidence < m_SwipeRecognizer.minAutoCommitConfidence)
                     {
                         ShowCandidatePreview(swipeCandidates);
                         if (m_LogSwipeSequence)
@@ -691,10 +707,20 @@ namespace VRTyping.Keyboard
                 List<SwipeWordCandidate> candidates = null;
                 // 多字母 swipe 尝试走模板识别，取分数最低的候选词。
                 if (sequence.Length > 1 && TryDecodeWord(trace, compactKeys, out candidates))
+                {
+                    if (m_ShowCandidatesAfterSwipe && TryBuildSwipeCandidates(candidates, out var templateCandidates))
+                    {
+                        ShowCandidatePreview(templateCandidates);
+                        if (m_LogSwipeSequence)
+                            Debug.Log("Swipe sequence " + sequence + " held for template candidates. Best=" + templateCandidates[0].word, this);
+                        return true;
+                    }
+
                     committedText = VRKeyboardTextComposer.ApplyLetterCase(
                         candidates[0].word,
                         m_CapsLockEnabled,
                         m_ShiftEnabled);
+                }
 
                 if (m_LogSwipeSequence)
                     Debug.Log("Swipe sequence " + sequence + " committed as " + committedText);
@@ -735,7 +761,7 @@ namespace VRTyping.Keyboard
 
         void ShowCandidatePreview(List<SwipeCandidate> candidates)
         {
-            if (m_SwipePreviewLabel == null || candidates == null || candidates.Count == 0)
+            if (candidates == null || candidates.Count == 0)
                 return;
 
             m_PendingSwipeCandidates.Clear();
@@ -749,6 +775,30 @@ namespace VRTyping.Keyboard
             m_NextCandidateMoveTime = 0f;
             m_CandidateConfirmWasHeld = ReadCandidateConfirmHeld();
             RefreshCandidatePreview();
+        }
+
+        bool TryBuildSwipeCandidates(List<SwipeWordCandidate> wordCandidates, out List<SwipeCandidate> candidates)
+        {
+            candidates = null;
+            if (wordCandidates == null || wordCandidates.Count == 0)
+                return false;
+
+            candidates = new List<SwipeCandidate>(wordCandidates.Count);
+            for (var i = 0; i < wordCandidates.Count; i++)
+            {
+                var wordCandidate = wordCandidates[i];
+                if (string.IsNullOrEmpty(wordCandidate.word))
+                    continue;
+
+                candidates.Add(new SwipeCandidate
+                {
+                    word = wordCandidate.word,
+                    finalScore = wordCandidate.score,
+                    confidence = 1f / (1f + Mathf.Max(0f, wordCandidate.score))
+                });
+            }
+
+            return candidates.Count > 0;
         }
 
         void RefreshCandidatePreview()

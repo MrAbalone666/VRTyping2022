@@ -51,6 +51,17 @@ namespace VRTyping.Keyboard
             ApplyMode();
         }
 
+        public void SetInputModeFromDropdown(int optionIndex)
+        {
+            if (optionIndex < 0 || optionIndex > (int)VRKeyboardInputMode.HandTouch10)
+            {
+                Debug.LogWarning("Invalid keyboard input mode dropdown index: " + optionIndex, this);
+                return;
+            }
+
+            SetInputMode((VRKeyboardInputMode)optionIndex);
+        }
+
         public void SetPressMode()
         {
             SetInputMode(VRKeyboardInputMode.Press);
@@ -103,6 +114,14 @@ namespace VRTyping.Keyboard
 
         void ApplyMode()
         {
+            if (Application.isPlaying)
+            {
+                DisableAllInputSources();
+                ActivateProbeGameObjects();
+                ResetAllKeyInteractionState();
+                Physics.SyncTransforms();
+            }
+
             // 手部触碰最终仍然是“离散按键按下”，所以需要保留 VRKeyboardController 的按键事件处理。
             var useDiscreteKeyPress =
                 m_InputMode == VRKeyboardInputMode.Press ||
@@ -133,6 +152,8 @@ namespace VRTyping.Keyboard
                             ? VRKeyboardInputMode.Dwell
                             : VRKeyboardInputMode.Press;
                     m_RayProbeInput.SetInputMode(rayMode);
+                    if (Application.isPlaying)
+                        m_RayProbeInput.ResetProbeState(true);
                 }
             }
 
@@ -146,6 +167,50 @@ namespace VRTyping.Keyboard
                     m_InputMode == VRKeyboardInputMode.HandTouch10;
                 m_HandTouchInput.SetUseAllFingerTips(m_InputMode == VRKeyboardInputMode.HandTouch10);
                 m_HandTouchInput.enabled = enableHandTouch;
+                if (enableHandTouch && Application.isPlaying)
+                    m_HandTouchInput.RefreshProbesNow();
+            }
+
+        }
+
+        void DisableAllInputSources()
+        {
+            if (m_PressInput != null)
+                m_PressInput.enabled = false;
+
+            if (m_SwipeInput != null)
+                m_SwipeInput.enabled = false;
+
+            if (m_RayProbeInput != null)
+                m_RayProbeInput.enabled = false;
+
+            if (m_StickTapInput != null)
+                m_StickTapInput.enabled = false;
+
+            if (m_HandTouchInput != null)
+                m_HandTouchInput.enabled = false;
+        }
+
+        void ActivateProbeGameObjects()
+        {
+            SetComponentGameObjectActive(m_RayProbeInput, true);
+            SetComponentGameObjectActive(m_StickTapInput, true);
+            SetComponentGameObjectActive(m_HandTouchInput, true);
+        }
+
+        static void SetComponentGameObjectActive(Component component, bool active)
+        {
+            if (component != null && component.gameObject.activeSelf != active)
+                component.gameObject.SetActive(active);
+        }
+
+        void ResetAllKeyInteractionState()
+        {
+            var keys = GetComponentsInChildren<VRKeyboardKey>(true);
+            for (var i = 0; i < keys.Length; i++)
+            {
+                if (keys[i] != null)
+                    keys[i].ResetInteractionState();
             }
         }
     }
