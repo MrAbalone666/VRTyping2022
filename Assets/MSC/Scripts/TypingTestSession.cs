@@ -49,7 +49,7 @@ namespace VRTyping.Tests
         string m_TargetSentence;
         int m_CurrentSentenceIndex;
         int m_CompletedTypedChars;
-        int m_CompletedCorrectChars;
+        int m_CompletedTargetChars;
         int m_CompletedTypos;
         bool m_TestStarted;
         bool m_TestFinished;
@@ -94,7 +94,7 @@ namespace VRTyping.Tests
             m_CurrentSentenceIndex = FindFirstSentenceIndex();
             m_TargetSentence = GetSentence(m_CurrentSentenceIndex);
             m_CompletedTypedChars = 0;
-            m_CompletedCorrectChars = 0;
+            m_CompletedTargetChars = 0;
             m_CompletedTypos = 0;
             m_CurrentSentenceCommitted = false;
             m_TestStarted = !m_StartOnFirstInput;
@@ -451,14 +451,15 @@ namespace VRTyping.Tests
 
         void ShowResults()
         {
-            GetTotalStats(out var typedChars, out var correctChars, out var typos);
+            GetTotalStats(out var typedChars, out var targetChars, out var typos);
             var elapsedSeconds = Mathf.Max(0.01f, m_TestDurationSeconds - m_RemainingSeconds);
             var minutes = elapsedSeconds / 60f;
-            var grossWpm = Mathf.RoundToInt((typedChars / 5f) / minutes);
-            var netWpm = Mathf.Max(0, Mathf.RoundToInt((correctChars / 5f) / minutes));
-            var accuracy = typedChars == 0
-                ? 0
-                : Mathf.RoundToInt((correctChars / (float)typedChars) * 100f);
+            var grossWpmValue = (typedChars / 5f) / minutes;
+            var cer = targetChars == 0 ? 0f : typos / (float)targetChars;
+            var accuracy01 = Mathf.Max(0f, 1f - cer);
+            var grossWpm = Mathf.RoundToInt(grossWpmValue);
+            var netWpm = Mathf.RoundToInt(grossWpmValue * accuracy01);
+            var accuracy = Mathf.RoundToInt(accuracy01 * 100f);
 
             if (m_ResultTitleText != null)
                 m_ResultTitleText.text = "Your Test Score";
@@ -550,36 +551,36 @@ namespace VRTyping.Tests
             if (m_CurrentSentenceCommitted)
                 return;
 
-            GetSentenceStats(playerText, m_TargetSentence, out var typedChars, out var correctChars, out var typos);
+            GetSentenceStats(playerText, m_TargetSentence, out var typedChars, out var targetChars, out var typos);
             m_CompletedTypedChars += typedChars;
-            m_CompletedCorrectChars += correctChars;
+            m_CompletedTargetChars += targetChars;
             m_CompletedTypos += typos;
             m_CurrentSentenceCommitted = true;
         }
 
-        void GetTotalStats(out int typedChars, out int correctChars, out int typos)
+        void GetTotalStats(out int typedChars, out int targetChars, out int typos)
         {
             typedChars = m_CompletedTypedChars;
-            correctChars = m_CompletedCorrectChars;
+            targetChars = m_CompletedTargetChars;
             typos = m_CompletedTypos;
 
             if (m_CurrentSentenceCommitted)
                 return;
 
-            GetSentenceStats(GetPlayerText(), m_TargetSentence, out var currentTypedChars, out var currentCorrectChars, out var currentTypos);
+            GetSentenceStats(GetPlayerText(), m_TargetSentence, out var currentTypedChars, out var currentTargetChars, out var currentTypos);
             typedChars += currentTypedChars;
-            correctChars += currentCorrectChars;
+            targetChars += currentTargetChars;
             typos += currentTypos;
         }
 
-        void GetSentenceStats(string playerText, string targetSentence, out int typedChars, out int correctChars, out int typos)
+        void GetSentenceStats(string playerText, string targetSentence, out int typedChars, out int targetChars, out int typos)
         {
             playerText = playerText ?? string.Empty;
             targetSentence = targetSentence ?? string.Empty;
 
             typedChars = playerText.Length;
+            targetChars = targetSentence.Length;
             typos = ComputeLevenshteinDistance(playerText, targetSentence);
-            correctChars = Mathf.Max(0, typedChars - typos);
         }
 
         void AppendColoredChar(StringBuilder builder, char value, Color color)

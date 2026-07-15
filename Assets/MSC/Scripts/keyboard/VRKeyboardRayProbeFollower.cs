@@ -15,6 +15,9 @@ namespace VRTyping.Keyboard
         // 提供射线曲线终点和命中法线的 XR 交互器。
         public NearFarInteractor m_NearFarInteractor;
 
+        [Tooltip("Controller hand driven by this probe. Auto infers from the interactor hierarchy.")]
+        public VRKeyboardControllerHand m_ControllerHand = VRKeyboardControllerHand.Auto;
+
 
         [Tooltip("Optional visual child used to show the probe position in play mode.")]
         // 运行时用来显示探针位置的可选可视物体。
@@ -189,6 +192,9 @@ namespace VRTyping.Keyboard
             m_CurrentPressDepth = 0f;
             ResetDwellState();
         }
+
+        public VRKeyboardControllerHand effectiveControllerHand =>
+            VRKeyboardControllerHandUtility.Resolve(m_ControllerHand, this, m_NearFarInteractor != null ? m_NearFarInteractor.transform : null);
 
         void SetPressProbeActive(bool active)
         {
@@ -416,9 +422,12 @@ namespace VRTyping.Keyboard
 
         float GetPressValue01()
         {
+            var hasFallback = VRKeyboardControllerHandUtility.TryReadTrigger(effectiveControllerHand, out var fallbackValue);
             var action = m_PressValueAction != null ? m_PressValueAction.action : null;
             if (action == null)
-                return 0f;
+            {
+                return hasFallback ? fallbackValue : 0f;
+            }
 
             float value;
             try
@@ -429,10 +438,11 @@ namespace VRTyping.Keyboard
             catch
             {
                 // 某些 action 可能是按钮类型，读取 float 失败时退回到 IsPressed。
-                return action.IsPressed() ? 1f : 0f;
+                value = action.IsPressed() ? 1f : 0f;
             }
 
-            return Mathf.Clamp01(value);
+            value = Mathf.Clamp01(value);
+            return hasFallback ? Mathf.Max(value, fallbackValue) : value;
         }
 
         VRKeyboardKey FindKeyAtProbePosition()

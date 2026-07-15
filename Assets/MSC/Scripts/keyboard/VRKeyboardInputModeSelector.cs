@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.XR;
 
 namespace VRTyping.Keyboard
 {
@@ -8,9 +10,7 @@ namespace VRTyping.Keyboard
         Swipe,
         StickTap,
         Dwell,
-        // HandTouch：只使用左右手食指指尖作为按键触碰点，适合普通手部点击。
         HandTouch,
-        // HandTouch10：十个手指都生成触碰探针，任意手指都可以按键。
         HandTouch10,
     }
 
@@ -21,10 +21,24 @@ namespace VRTyping.Keyboard
         [Header("Input Components")]
         [SerializeField] VRKeyboardController m_PressInput;
         [SerializeField] VRKeyboardSwipeInput m_SwipeInput;
+
+        [Tooltip("Legacy primary ray probe. Keep this assigned for Swipe and Dwell if you do not assign a right probe object.")]
         [SerializeField] VRKeyboardRayProbeFollower m_RayProbeInput;
+
+        [Tooltip("Legacy primary stick probe.")]
         [SerializeField] VRKeyboardStickProbeFollower m_StickTapInput;
-        // 手部输入统一由 VRKeyboardHandProbeFollower 管理，模式切换这里只负责启停和十指开关。
+
         [SerializeField] VRKeyboardHandProbeFollower m_HandTouchInput;
+
+        [Header("Controller Probe Objects")]
+        [Tooltip("Drag the left controller follow sphere here. It can contain Ray and Stick probe follower components.")]
+        public GameObject m_LeftControllerProbeObject;
+
+        [Tooltip("Drag the right controller follow sphere here. It can contain Ray and Stick probe follower components.")]
+        public GameObject m_RightControllerProbeObject;
+
+        readonly List<VRKeyboardRayProbeFollower> m_RayProbeCache = new List<VRKeyboardRayProbeFollower>(4);
+        readonly List<VRKeyboardStickProbeFollower> m_StickProbeCache = new List<VRKeyboardStickProbeFollower>(4);
 
         public VRKeyboardInputMode currentInputMode => m_InputMode;
 
@@ -84,13 +98,11 @@ namespace VRTyping.Keyboard
 
         public void SetHandTouchMode()
         {
-            // UI 或调试按钮可以调用这个方法切到“左右食指触碰”模式。
             SetInputMode(VRKeyboardInputMode.HandTouch);
         }
 
         public void SetHandTouch10Mode()
         {
-            // UI 或调试按钮可以调用这个方法切到“十指触碰”模式。
             SetInputMode(VRKeyboardInputMode.HandTouch10);
         }
 
@@ -122,7 +134,9 @@ namespace VRTyping.Keyboard
                 Physics.SyncTransforms();
             }
 
-            // 手部触碰最终仍然是“离散按键按下”，所以需要保留 VRKeyboardController 的按键事件处理。
+            var rayProbes = CollectRayProbes();
+            var stickProbes = CollectStickProbes();
+
             var useDiscreteKeyPress =
                 m_InputMode == VRKeyboardInputMode.Press ||
                 m_InputMode == VRKeyboardInputMode.StickTap ||
@@ -136,33 +150,44 @@ namespace VRTyping.Keyboard
             if (m_SwipeInput != null)
                 m_SwipeInput.enabled = m_InputMode == VRKeyboardInputMode.Swipe;
 
-            if (m_RayProbeInput != null)
-            {
-                // HandTouch/HandTouch10 使用指尖探针，不再使用控制器射线探针，避免两套输入同时按键。
-                var enableRayProbe = m_InputMode != VRKeyboardInputMode.StickTap &&
-                    m_InputMode != VRKeyboardInputMode.HandTouch &&
-                    m_InputMode != VRKeyboardInputMode.HandTouch10;
-                m_RayProbeInput.enabled = enableRayProbe;
+            var primaryRayProbe = GetPrimaryRayProbe(rayProbes);
+            var enableControllerRay =
+                m_InputMode != VRKeyboardInputMode.StickTap &&
+                m_InputMode != VRKeyboardInputMode.HandTouch &&
+                m_InputMode != VRKeyboardInputMode.HandTouch10;
 
-                if (enableRayProbe)
-                {
-                    var rayMode = m_InputMode == VRKeyboardInputMode.Swipe
-                        ? VRKeyboardInputMode.Swipe
-                        : m_InputMode == VRKeyboardInputMode.Dwell
-                            ? VRKeyboardInputMode.Dwell
-                            : VRKeyboardInputMode.Press;
-                    m_RayProbeInput.SetInputMode(rayMode);
-                    if (Application.isPlaying)
-                        m_RayProbeInput.ResetProbeState(true);
-                }
+            for (var i = 0; i < rayProbes.Count; i++)
+            {
+                var rayProbe = rayProbes[i];
+                if (rayProbe == null)
+                    continue;
+
+                var enableRayProbe = enableControllerRay &&
+                    (m_InputMode == VRKeyboardInputMode.Press || rayProbe == primaryRayProbe);
+
+                rayProbe.enabled = enableRayProbe;
+                if (!enableRayProbe)
+                    continue;
+
+                var rayMode = m_InputMode == VRKeyboardInputMode.Swipe
+                    ? VRKeyboardInputMode.Swipe
+                    : m_InputMode == VRKeyboardInputMode.Dwell
+                        ? VRKeyboardInputMode.Dwell
+                        : VRKeyboardInputMode.Press;
+
+                rayProbe.SetInputMode(rayMode);
+                if (Application.isPlaying)
+                    rayProbe.ResetProbeState(true);
             }
 
-            if (m_StickTapInput != null)
-                m_StickTapInput.enabled = m_InputMode == VRKeyboardInputMode.StickTap;
+            for (var i = 0; i < stickProbes.Count; i++)
+            {
+                if (stickProbes[i] != null)
+                    stickProbes[i].enabled = m_InputMode == VRKeyboardInputMode.StickTap;
+            }
 
             if (m_HandTouchInput != null)
             {
-                // HandTouch 与 HandTouch10 共用同一个脚本，只通过 SetUseAllFingerTips 区分“食指”还是“十指”。
                 var enableHandTouch = m_InputMode == VRKeyboardInputMode.HandTouch ||
                     m_InputMode == VRKeyboardInputMode.HandTouch10;
                 m_HandTouchInput.SetUseAllFingerTips(m_InputMode == VRKeyboardInputMode.HandTouch10);
@@ -170,7 +195,6 @@ namespace VRTyping.Keyboard
                 if (enableHandTouch && Application.isPlaying)
                     m_HandTouchInput.RefreshProbesNow();
             }
-
         }
 
         void DisableAllInputSources()
@@ -181,11 +205,19 @@ namespace VRTyping.Keyboard
             if (m_SwipeInput != null)
                 m_SwipeInput.enabled = false;
 
-            if (m_RayProbeInput != null)
-                m_RayProbeInput.enabled = false;
+            var rayProbes = CollectRayProbes();
+            for (var i = 0; i < rayProbes.Count; i++)
+            {
+                if (rayProbes[i] != null)
+                    rayProbes[i].enabled = false;
+            }
 
-            if (m_StickTapInput != null)
-                m_StickTapInput.enabled = false;
+            var stickProbes = CollectStickProbes();
+            for (var i = 0; i < stickProbes.Count; i++)
+            {
+                if (stickProbes[i] != null)
+                    stickProbes[i].enabled = false;
+            }
 
             if (m_HandTouchInput != null)
                 m_HandTouchInput.enabled = false;
@@ -193,15 +225,85 @@ namespace VRTyping.Keyboard
 
         void ActivateProbeGameObjects()
         {
-            SetComponentGameObjectActive(m_RayProbeInput, true);
-            SetComponentGameObjectActive(m_StickTapInput, true);
+            SetGameObjectActive(m_LeftControllerProbeObject, true);
+            SetGameObjectActive(m_RightControllerProbeObject, true);
+
+            var rayProbes = CollectRayProbes();
+            for (var i = 0; i < rayProbes.Count; i++)
+                SetComponentGameObjectActive(rayProbes[i], true);
+
+            var stickProbes = CollectStickProbes();
+            for (var i = 0; i < stickProbes.Count; i++)
+                SetComponentGameObjectActive(stickProbes[i], true);
+
             SetComponentGameObjectActive(m_HandTouchInput, true);
+        }
+
+        List<VRKeyboardRayProbeFollower> CollectRayProbes()
+        {
+            m_RayProbeCache.Clear();
+            AddRayProbeObject(m_RightControllerProbeObject, VRKeyboardControllerHand.Right);
+            AddRayProbeObject(m_LeftControllerProbeObject, VRKeyboardControllerHand.Left);
+            AddUnique(m_RayProbeCache, m_RayProbeInput);
+            return m_RayProbeCache;
+        }
+
+        List<VRKeyboardStickProbeFollower> CollectStickProbes()
+        {
+            m_StickProbeCache.Clear();
+            AddStickProbeObject(m_RightControllerProbeObject, VRKeyboardControllerHand.Right);
+            AddStickProbeObject(m_LeftControllerProbeObject, VRKeyboardControllerHand.Left);
+            AddUnique(m_StickProbeCache, m_StickTapInput);
+            return m_StickProbeCache;
+        }
+
+        void AddRayProbeObject(GameObject probeObject, VRKeyboardControllerHand hand)
+        {
+            if (probeObject == null)
+                return;
+
+            var rayProbe = probeObject.GetComponent<VRKeyboardRayProbeFollower>();
+            if (rayProbe == null)
+                return;
+
+            rayProbe.m_ControllerHand = hand;
+            AddUnique(m_RayProbeCache, rayProbe);
+        }
+
+        void AddStickProbeObject(GameObject probeObject, VRKeyboardControllerHand hand)
+        {
+            if (probeObject == null)
+                return;
+
+            var stickProbe = probeObject.GetComponent<VRKeyboardStickProbeFollower>();
+            if (stickProbe == null)
+                return;
+
+            stickProbe.m_ControllerHand = hand;
+            AddUnique(m_StickProbeCache, stickProbe);
+        }
+
+        static VRKeyboardRayProbeFollower GetPrimaryRayProbe(List<VRKeyboardRayProbeFollower> rayProbes)
+        {
+            return rayProbes.Count > 0 ? rayProbes[0] : null;
         }
 
         static void SetComponentGameObjectActive(Component component, bool active)
         {
             if (component != null && component.gameObject.activeSelf != active)
                 component.gameObject.SetActive(active);
+        }
+
+        static void SetGameObjectActive(GameObject gameObject, bool active)
+        {
+            if (gameObject != null && gameObject.activeSelf != active)
+                gameObject.SetActive(active);
+        }
+
+        static void AddUnique<T>(List<T> list, T item) where T : Component
+        {
+            if (item != null && !list.Contains(item))
+                list.Add(item);
         }
 
         void ResetAllKeyInteractionState()
@@ -212,6 +314,105 @@ namespace VRTyping.Keyboard
                 if (keys[i] != null)
                     keys[i].ResetInteractionState();
             }
+        }
+    }
+
+    public enum VRKeyboardControllerHand
+    {
+        Auto,
+        Left,
+        Right,
+    }
+
+    static class VRKeyboardControllerHandUtility
+    {
+        static readonly List<InputDevice> s_Devices = new List<InputDevice>(4);
+
+        public static VRKeyboardControllerHand Resolve(
+            VRKeyboardControllerHand configuredHand,
+            Component owner,
+            Transform preferredTransform = null)
+        {
+            if (configuredHand != VRKeyboardControllerHand.Auto)
+                return configuredHand;
+
+            if (ContainsHandName(preferredTransform, "Left"))
+                return VRKeyboardControllerHand.Left;
+
+            if (ContainsHandName(preferredTransform, "Right"))
+                return VRKeyboardControllerHand.Right;
+
+            if (owner != null)
+            {
+                if (ContainsHandName(owner.transform, "Left"))
+                    return VRKeyboardControllerHand.Left;
+
+                if (ContainsHandName(owner.transform, "Right"))
+                    return VRKeyboardControllerHand.Right;
+            }
+
+            return VRKeyboardControllerHand.Right;
+        }
+
+        public static bool TryReadTrigger(VRKeyboardControllerHand hand, out float value)
+        {
+            value = 0f;
+            var device = GetControllerDevice(hand);
+            if (!device.isValid)
+                return false;
+
+            if (device.TryGetFeatureValue(CommonUsages.trigger, out value))
+            {
+                value = Mathf.Clamp01(value);
+                return true;
+            }
+
+            if (device.TryGetFeatureValue(CommonUsages.triggerButton, out var pressed))
+            {
+                value = pressed ? 1f : 0f;
+                return true;
+            }
+
+            return false;
+        }
+
+        public static bool TryReadThumbstick(VRKeyboardControllerHand hand, out Vector2 axis)
+        {
+            axis = Vector2.zero;
+            var device = GetControllerDevice(hand);
+            return device.isValid &&
+                device.TryGetFeatureValue(CommonUsages.primary2DAxis, out axis);
+        }
+
+        static InputDevice GetControllerDevice(VRKeyboardControllerHand hand)
+        {
+            s_Devices.Clear();
+            var characteristics = InputDeviceCharacteristics.Controller;
+            characteristics |= hand == VRKeyboardControllerHand.Left
+                ? InputDeviceCharacteristics.Left
+                : InputDeviceCharacteristics.Right;
+
+            InputDevices.GetDevicesWithCharacteristics(characteristics, s_Devices);
+            for (var i = 0; i < s_Devices.Count; i++)
+            {
+                if (s_Devices[i].isValid)
+                    return s_Devices[i];
+            }
+
+            return default;
+        }
+
+        static bool ContainsHandName(Transform transform, string handName)
+        {
+            while (transform != null)
+            {
+                if (transform.name.IndexOf(handName, System.StringComparison.OrdinalIgnoreCase) >= 0)
+                    return true;
+
+                transform = transform.parent;
+            }
+
+            return false;
         }
     }
 }

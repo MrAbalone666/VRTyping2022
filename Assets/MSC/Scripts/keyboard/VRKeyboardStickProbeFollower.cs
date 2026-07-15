@@ -22,6 +22,9 @@ namespace VRTyping.Keyboard
         // 跟随目标，通常是控制器或手部锚点；它的位置和 forward 决定 stick 的方向。
         public Transform m_FollowTarget;
 
+        [Tooltip("Controller hand driven by this probe. Auto infers from the follow target hierarchy.")]
+        public VRKeyboardControllerHand m_ControllerHand = VRKeyboardControllerHand.Auto;
+
 
         [Tooltip("Optional child used as the visible rod between the controller and the probe tip.")]
         // 可选的杆状可视物，用来显示从控制器到探针尖端的 stick。
@@ -108,6 +111,9 @@ namespace VRTyping.Keyboard
         float m_ActivationTime;
         // 只在本脚本启用了长度调节 action 时，禁用时才负责关掉它。
         bool m_EnabledLengthAdjustAction;
+
+        public VRKeyboardControllerHand effectiveControllerHand =>
+            VRKeyboardControllerHandUtility.Resolve(m_ControllerHand, this, m_FollowTarget);
 
         void Reset()
         {
@@ -229,15 +235,31 @@ namespace VRTyping.Keyboard
         void UpdateStickLength()
         {
             var action = m_LengthAdjustAction != null ? m_LengthAdjustAction.action : null;
-            if (action == null || m_StickLengthAdjustSpeed <= 0f)
+            if (m_StickLengthAdjustSpeed <= 0f)
                 return;
 
-            Vector2 axisValue;
-            try
+            var axisValue = Vector2.zero;
+            var hasAxisValue = false;
+            if (action != null)
             {
-                axisValue = action.ReadValue<Vector2>();
+                try
+                {
+                    axisValue = action.ReadValue<Vector2>();
+                    hasAxisValue = true;
+                }
+                catch
+                {
+                }
             }
-            catch
+
+            if (VRKeyboardControllerHandUtility.TryReadThumbstick(effectiveControllerHand, out var fallbackAxisValue) &&
+                (!hasAxisValue || fallbackAxisValue.sqrMagnitude > axisValue.sqrMagnitude))
+            {
+                axisValue = fallbackAxisValue;
+                hasAxisValue = true;
+            }
+
+            if (!hasAxisValue)
             {
                 return;
             }

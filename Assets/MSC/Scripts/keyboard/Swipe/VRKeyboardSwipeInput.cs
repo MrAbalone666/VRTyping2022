@@ -195,7 +195,7 @@ namespace VRTyping.Keyboard
         readonly Dictionary<Collider, SwipeTrace> m_ActiveTraces = new Dictionary<Collider, SwipeTrace>();
 
         readonly List<SwipeCandidate> m_PendingSwipeCandidates = new List<SwipeCandidate>(5);
-        readonly List<UnityEngine.XR.InputDevice> m_RightHandDevices = new List<UnityEngine.XR.InputDevice>(2);
+        readonly List<UnityEngine.XR.InputDevice> m_ControllerDevices = new List<UnityEngine.XR.InputDevice>(4);
         int m_SelectedCandidateIndex;
         float m_NextCandidateMoveTime;
         bool m_CandidateConfirmWasHeld;
@@ -333,49 +333,70 @@ namespace VRTyping.Keyboard
 
         Vector2 ReadCandidateMoveAxis()
         {
+            var axisValue = Vector2.zero;
             var action = m_CandidateMoveAction != null ? m_CandidateMoveAction.action : null;
             if (action != null)
             {
                 try
                 {
-                    return action.ReadValue<Vector2>();
+                    axisValue = action.ReadValue<Vector2>();
                 }
                 catch
                 {
-                    return Vector2.zero;
                 }
             }
 
-            var device = GetRightHandDevice();
-            if (device.isValid &&
-                device.TryGetFeatureValue(UnityEngine.XR.CommonUsages.primary2DAxis, out Vector2 axis))
+            if (TryReadControllerMoveAxis(UnityEngine.XR.InputDeviceCharacteristics.Right, out var rightAxis) &&
+                rightAxis.sqrMagnitude > axisValue.sqrMagnitude)
             {
-                return axis;
+                axisValue = rightAxis;
             }
 
-            return Vector2.zero;
+            if (TryReadControllerMoveAxis(UnityEngine.XR.InputDeviceCharacteristics.Left, out var leftAxis) &&
+                leftAxis.sqrMagnitude > axisValue.sqrMagnitude)
+            {
+                axisValue = leftAxis;
+            }
+
+            return axisValue;
         }
 
         bool ReadCandidateConfirmHeld()
         {
             var action = m_CandidateConfirmAction != null ? m_CandidateConfirmAction.action : null;
+            var actionHeld = false;
             if (action != null)
             {
                 try
                 {
-                    return action.ReadValue<float>() >= m_CandidateConfirmThreshold;
+                    actionHeld = action.ReadValue<float>() >= m_CandidateConfirmThreshold;
                 }
                 catch
                 {
-                    return action.IsPressed();
+                    actionHeld = action.IsPressed();
                 }
             }
 
-            var device = GetRightHandDevice();
+            return actionHeld ||
+                   ReadControllerConfirmHeld(UnityEngine.XR.InputDeviceCharacteristics.Right) ||
+                   ReadControllerConfirmHeld(UnityEngine.XR.InputDeviceCharacteristics.Left);
+        }
+
+        bool TryReadControllerMoveAxis(UnityEngine.XR.InputDeviceCharacteristics hand, out Vector2 axis)
+        {
+            axis = Vector2.zero;
+            var device = GetControllerDevice(hand);
+            return device.isValid &&
+                   device.TryGetFeatureValue(UnityEngine.XR.CommonUsages.primary2DAxis, out axis);
+        }
+
+        bool ReadControllerConfirmHeld(UnityEngine.XR.InputDeviceCharacteristics hand)
+        {
+            var device = GetControllerDevice(hand);
             if (!device.isValid)
                 return false;
 
-            if (device.TryGetFeatureValue(UnityEngine.XR.CommonUsages.triggerButton, out bool triggerButton) &&
+            if (device.TryGetFeatureValue(UnityEngine.XR.CommonUsages.triggerButton, out var triggerButton) &&
                 triggerButton)
             {
                 return true;
@@ -385,18 +406,18 @@ namespace VRTyping.Keyboard
                    trigger >= m_CandidateConfirmThreshold;
         }
 
-        UnityEngine.XR.InputDevice GetRightHandDevice()
+        UnityEngine.XR.InputDevice GetControllerDevice(UnityEngine.XR.InputDeviceCharacteristics hand)
         {
-            m_RightHandDevices.Clear();
+            m_ControllerDevices.Clear();
             UnityEngine.XR.InputDevices.GetDevicesWithCharacteristics(
-                UnityEngine.XR.InputDeviceCharacteristics.Right |
+                hand |
                 UnityEngine.XR.InputDeviceCharacteristics.Controller,
-                m_RightHandDevices);
+                m_ControllerDevices);
 
-            for (var i = 0; i < m_RightHandDevices.Count; i++)
+            for (var i = 0; i < m_ControllerDevices.Count; i++)
             {
-                if (m_RightHandDevices[i].isValid)
-                    return m_RightHandDevices[i];
+                if (m_ControllerDevices[i].isValid)
+                    return m_ControllerDevices[i];
             }
 
             return default(UnityEngine.XR.InputDevice);
