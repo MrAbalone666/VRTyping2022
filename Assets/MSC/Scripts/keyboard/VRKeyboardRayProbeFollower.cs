@@ -95,8 +95,6 @@ namespace VRTyping.Keyboard
         ICurveInteractionDataProvider m_CurveProvider;
         // 当前平滑后的虚拟按压深度。
         float m_CurrentPressDepth;
-        // 记录是否由本脚本启用了 InputAction，禁用时只关闭自己打开过的 action。
-        bool m_EnabledPressAction;
         bool m_LastVisualActive;
         bool m_LastColliderActive;
         // 当前被按压/凝视锁定的按键。
@@ -145,13 +143,10 @@ namespace VRTyping.Keyboard
             SetPressProbeActive(true);
             ResetProbeState(true);
 
-            // 如果输入 action 还没启用，由本脚本临时启用，并在 OnDisable 中恢复。
+            // XR Rig 全局共享这个 action；模式切换时保持启用，只停用本探针。
             var action = m_PressValueAction != null ? m_PressValueAction.action : null;
             if (action != null && !action.enabled)
-            {
                 action.Enable();
-                m_EnabledPressAction = true;
-            }
         }
 
         void OnDisable()
@@ -171,14 +166,6 @@ namespace VRTyping.Keyboard
             SetVisualActive(false);
             m_LastVisualActive = false;
 
-            if (!m_EnabledPressAction)
-                return;
-
-            var action = m_PressValueAction != null ? m_PressValueAction.action : null;//如果 m_PressValueAction 不为空，就取它里面的 .action；否则返回空
-            if (action != null && action.enabled)
-                action.Disable();
-
-            m_EnabledPressAction = false;
         }
 
         public void SetInputMode(VRKeyboardInputMode inputMode)//切换输入模式

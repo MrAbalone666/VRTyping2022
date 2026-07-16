@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.XR;
 
 namespace VRTyping.Keyboard
@@ -39,6 +40,9 @@ namespace VRTyping.Keyboard
 
         readonly List<VRKeyboardRayProbeFollower> m_RayProbeCache = new List<VRKeyboardRayProbeFollower>(4);
         readonly List<VRKeyboardStickProbeFollower> m_StickProbeCache = new List<VRKeyboardStickProbeFollower>(4);
+        readonly List<GameObject> m_ActivationPath = new List<GameObject>(8);
+        bool m_HasAppliedMode;
+        VRKeyboardInputMode m_LastAppliedMode;
 
         public VRKeyboardInputMode currentInputMode => m_InputMode;
 
@@ -130,19 +134,32 @@ namespace VRTyping.Keyboard
             {
                 DisableAllInputSources();
                 ActivateProbeGameObjects();
-                ResetAllKeyInteractionState();
-                Physics.SyncTransforms();
             }
 
             var rayProbes = CollectRayProbes();
             var stickProbes = CollectStickProbes();
+            var useHandTouch =
+                m_InputMode == VRKeyboardInputMode.HandTouch ||
+                m_InputMode == VRKeyboardInputMode.HandTouch10;
+            var leavingHandTouch =
+                m_HasAppliedMode &&
+                IsHandTouchMode(m_LastAppliedMode) &&
+                !useHandTouch;
+
+            if (Application.isPlaying)
+            {
+                if (leavingHandTouch)
+                    RestoreControllerInputObjects(rayProbes, stickProbes);
+
+                ResetAllKeyInteractionState();
+                Physics.SyncTransforms();
+            }
 
             var useDiscreteKeyPress =
                 m_InputMode == VRKeyboardInputMode.Press ||
                 m_InputMode == VRKeyboardInputMode.StickTap ||
                 m_InputMode == VRKeyboardInputMode.Dwell ||
-                m_InputMode == VRKeyboardInputMode.HandTouch ||
-                m_InputMode == VRKeyboardInputMode.HandTouch10;
+                useHandTouch;
 
             if (m_PressInput != null)
                 m_PressInput.enabled = useDiscreteKeyPress;
@@ -188,12 +205,16 @@ namespace VRTyping.Keyboard
 
             if (m_HandTouchInput != null)
             {
-                var enableHandTouch = m_InputMode == VRKeyboardInputMode.HandTouch ||
-                    m_InputMode == VRKeyboardInputMode.HandTouch10;
                 m_HandTouchInput.SetUseAllFingerTips(m_InputMode == VRKeyboardInputMode.HandTouch10);
-                m_HandTouchInput.enabled = enableHandTouch;
-                if (enableHandTouch && Application.isPlaying)
+                m_HandTouchInput.enabled = useHandTouch;
+                if (useHandTouch && Application.isPlaying)
                     m_HandTouchInput.RefreshProbesNow();
+            }
+
+            if (Application.isPlaying)
+            {
+                m_LastAppliedMode = m_InputMode;
+                m_HasAppliedMode = true;
             }
         }
 
@@ -237,6 +258,86 @@ namespace VRTyping.Keyboard
                 SetComponentGameObjectActive(stickProbes[i], true);
 
             SetComponentGameObjectActive(m_HandTouchInput, true);
+        }
+
+        void RestoreControllerInputObjects(
+            List<VRKeyboardRayProbeFollower> rayProbes,
+            List<VRKeyboardStickProbeFollower> stickProbes)
+        {
+            var restoreRay =
+                m_InputMode == VRKeyboardInputMode.Press ||
+                m_InputMode == VRKeyboardInputMode.Swipe ||
+                m_InputMode == VRKeyboardInputMode.Dwell;
+            var restoreStick = m_InputMode == VRKeyboardInputMode.StickTap;
+
+            if (restoreRay)
+            {
+                for (var i = 0; i < rayProbes.Count; i++)
+                {
+                    var rayProbe = rayProbes[i];
+                    if (rayProbe == null)
+                        continue;
+
+                    RestoreHierarchyActive(rayProbe.gameObject);
+
+                    var nearFarInteractor = rayProbe.m_NearFarInteractor;
+                    if (nearFarInteractor == null)
+                        continue;
+
+                    RestoreHierarchyActive(nearFarInteractor.gameObject);
+                    nearFarInteractor.enabled = true;
+                    EnableAction(rayProbe.m_PressValueAction);
+                }
+            }
+
+            if (restoreStick)
+            {
+                for (var i = 0; i < stickProbes.Count; i++)
+                {
+                    var stickProbe = stickProbes[i];
+                    if (stickProbe == null)
+                        continue;
+
+                    RestoreHierarchyActive(stickProbe.gameObject);
+
+                    if (stickProbe.m_FollowTarget != null)
+                        RestoreHierarchyActive(stickProbe.m_FollowTarget.gameObject);
+
+                    EnableAction(stickProbe.m_LengthAdjustAction);
+                }
+            }
+        }
+
+        static void EnableAction(InputActionReference actionReference)
+        {
+            var action = actionReference != null ? actionReference.action : null;
+            if (action != null && !action.enabled)
+                action.Enable();
+        }
+
+        static bool IsHandTouchMode(VRKeyboardInputMode inputMode)
+        {
+            return inputMode == VRKeyboardInputMode.HandTouch ||
+                inputMode == VRKeyboardInputMode.HandTouch10;
+        }
+
+        void RestoreHierarchyActive(GameObject gameObject)
+        {
+            if (gameObject == null)
+                return;
+
+            m_ActivationPath.Clear();
+            var current = gameObject.transform;
+            while (current != null)
+            {
+                if (!current.gameObject.activeSelf)
+                    m_ActivationPath.Add(current.gameObject);
+
+                current = current.parent;
+            }
+
+            for (var i = m_ActivationPath.Count - 1; i >= 0; i--)
+                m_ActivationPath[i].SetActive(true);
         }
 
         List<VRKeyboardRayProbeFollower> CollectRayProbes()
@@ -326,7 +427,7 @@ namespace VRTyping.Keyboard
 
     static class VRKeyboardControllerHandUtility
     {
-        static readonly List<InputDevice> s_Devices = new List<InputDevice>(4);
+        static readonly List<UnityEngine.XR.InputDevice> s_Devices = new List<UnityEngine.XR.InputDevice>(4);
 
         public static VRKeyboardControllerHand Resolve(
             VRKeyboardControllerHand configuredHand,
@@ -356,50 +457,84 @@ namespace VRTyping.Keyboard
 
         public static bool TryReadTrigger(VRKeyboardControllerHand hand, out float value)
         {
-            value = 0f;
-            var device = GetControllerDevice(hand);
-            if (!device.isValid)
-                return false;
-
-            if (device.TryGetFeatureValue(CommonUsages.trigger, out value))
-            {
-                value = Mathf.Clamp01(value);
+            var side = GetSideCharacteristics(hand);
+            if (TryReadTrigger(side | InputDeviceCharacteristics.Controller, out value))
                 return true;
-            }
 
-            if (device.TryGetFeatureValue(CommonUsages.triggerButton, out var pressed))
-            {
-                value = pressed ? 1f : 0f;
+            if (TryReadTrigger(side | InputDeviceCharacteristics.HeldInHand, out value))
                 return true;
-            }
 
-            return false;
+            return TryReadTrigger(side, out value);
         }
 
         public static bool TryReadThumbstick(VRKeyboardControllerHand hand, out Vector2 axis)
         {
-            axis = Vector2.zero;
-            var device = GetControllerDevice(hand);
-            return device.isValid &&
-                device.TryGetFeatureValue(CommonUsages.primary2DAxis, out axis);
+            var side = GetSideCharacteristics(hand);
+            if (TryReadThumbstick(side | InputDeviceCharacteristics.Controller, out axis))
+                return true;
+
+            if (TryReadThumbstick(side | InputDeviceCharacteristics.HeldInHand, out axis))
+                return true;
+
+            return TryReadThumbstick(side, out axis);
         }
 
-        static InputDevice GetControllerDevice(VRKeyboardControllerHand hand)
+        static bool TryReadTrigger(InputDeviceCharacteristics characteristics, out float value)
         {
             s_Devices.Clear();
-            var characteristics = InputDeviceCharacteristics.Controller;
-            characteristics |= hand == VRKeyboardControllerHand.Left
-                ? InputDeviceCharacteristics.Left
-                : InputDeviceCharacteristics.Right;
-
             InputDevices.GetDevicesWithCharacteristics(characteristics, s_Devices);
+            var found = false;
+            value = 0f;
             for (var i = 0; i < s_Devices.Count; i++)
             {
-                if (s_Devices[i].isValid)
-                    return s_Devices[i];
+                var device = s_Devices[i];
+                if (!device.isValid)
+                    continue;
+
+                if (device.TryGetFeatureValue(UnityEngine.XR.CommonUsages.trigger, out var trigger))
+                {
+                    value = Mathf.Max(value, Mathf.Clamp01(trigger));
+                    found = true;
+                }
+                else if (device.TryGetFeatureValue(UnityEngine.XR.CommonUsages.triggerButton, out var pressed))
+                {
+                    value = Mathf.Max(value, pressed ? 1f : 0f);
+                    found = true;
+                }
             }
 
-            return default;
+            return found;
+        }
+
+        static bool TryReadThumbstick(InputDeviceCharacteristics characteristics, out Vector2 axis)
+        {
+            s_Devices.Clear();
+            InputDevices.GetDevicesWithCharacteristics(characteristics, s_Devices);
+            var found = false;
+            axis = Vector2.zero;
+            for (var i = 0; i < s_Devices.Count; i++)
+            {
+                var device = s_Devices[i];
+                if (!device.isValid ||
+                    !device.TryGetFeatureValue(UnityEngine.XR.CommonUsages.primary2DAxis, out var candidate))
+                {
+                    continue;
+                }
+
+                if (!found || candidate.sqrMagnitude > axis.sqrMagnitude)
+                    axis = candidate;
+
+                found = true;
+            }
+
+            return found;
+        }
+
+        static InputDeviceCharacteristics GetSideCharacteristics(VRKeyboardControllerHand hand)
+        {
+            return hand == VRKeyboardControllerHand.Left
+                ? InputDeviceCharacteristics.Left
+                : InputDeviceCharacteristics.Right;
         }
 
         static bool ContainsHandName(Transform transform, string handName)

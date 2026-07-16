@@ -109,9 +109,6 @@ namespace VRTyping.Keyboard
         bool m_LastColliderActive;
         // 到达该时间后才真正启用探针。
         float m_ActivationTime;
-        // 只在本脚本启用了长度调节 action 时，禁用时才负责关掉它。
-        bool m_EnabledLengthAdjustAction;
-
         public VRKeyboardControllerHand effectiveControllerHand =>
             VRKeyboardControllerHandUtility.Resolve(m_ControllerHand, this, m_FollowTarget);
 
@@ -158,13 +155,10 @@ namespace VRTyping.Keyboard
         {
             SetPressProbeActive(true);
 
-            // 如果长度调节 action 没开，由本脚本临时启用。
+            // XR Rig 全局共享这个 action；模式切换时保持启用，只停用本探针。
             var action = m_LengthAdjustAction != null ? m_LengthAdjustAction.action : null;
             if (action != null && !action.enabled)
-            {
                 action.Enable();
-                m_EnabledLengthAdjustAction = true;
-            }
 
             m_ActivationTime = Time.time + m_ActivationDelay;
             SyncToTarget();
@@ -179,14 +173,6 @@ namespace VRTyping.Keyboard
             SetColliderActive(false);
             SetVisualActive(false);
 
-            if (!m_EnabledLengthAdjustAction)
-                return;
-
-            var action = m_LengthAdjustAction != null ? m_LengthAdjustAction.action : null;
-            if (action != null && action.enabled)
-                action.Disable();
-
-            m_EnabledLengthAdjustAction = false;
         }
 
         void SetPressProbeActive(bool active)

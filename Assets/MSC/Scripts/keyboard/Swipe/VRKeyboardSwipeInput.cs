@@ -73,22 +73,8 @@ namespace VRTyping.Keyboard
 
         [Header("Word Recognition")]
         [SerializeField]
-        // 旧的词表引用位；当前运行时主要使用预生成的模板数据库。
+        // 新识别器使用的普通词库文本；模板会根据当前键盘坐标在运行时自动生成。
         TextAsset m_TemplateWordList;
-
-        [SerializeField]
-        // 预生成的滑词模板数据库；为空时会尝试从 Resources/SwipeTemplates 加载。
-        TextAsset m_TemplateDatabaseAsset;
-
-        [SerializeField]
-        [Range(8, 128)]
-        // 生成/匹配模板时的轨迹采样点数量。
-        int m_TemplateSampleCount = 64;
-
-        [SerializeField]
-        [Min(1)]
-        // 生成模板数据库时最多使用多少个单词。
-        int m_MaxTemplateWords = 10000;
 
         [SerializeField]
         [Range(1, 10)]
@@ -101,31 +87,12 @@ namespace VRTyping.Keyboard
         float m_MinTrajectorySampleDistance = 0.01f;
 
         [SerializeField]
-        [Range(0.01f, 0.5f)]
-        // 候选词模板起点/终点允许偏离用户轨迹端点的半径。
-        float m_CandidateEndpointRadius = 0.18f;
-
-        [SerializeField]
-        [Range(0, 20)]
-        // 滑过字母数量和候选词长度允许相差多少。
-        int m_MaxSequenceLengthDifference = 6;
-
-        [SerializeField]
-        [Range(1, 32)]
-        // DTW 比较时的窗口半径，越大越宽容但计算更多。
-        int m_DtwWindowRadius = 10;
-
-        [SerializeField]
         // 成功识别成单词后是否自动追加空格。
         bool m_AppendSpaceAfterSwipeWord = true;
 
         [SerializeField]
         [Tooltip("Runtime recognizer used by swipe mode. If empty, one is found or added automatically.")]
         SwipeTypingRecognizer m_SwipeRecognizer;
-
-        [SerializeField]
-        [Tooltip("Use the multi-model recognizer first, then fall back to the legacy decoder if needed.")]
-        bool m_UseSwipeTypingRecognizer = true;
 
         [Header("Candidate Selection")]
         [SerializeField]
@@ -157,15 +124,6 @@ namespace VRTyping.Keyboard
 
         [SerializeField]
         Color m_CandidateSelectedColor = new Color(0.2f, 0.75f, 1f, 1f);
-
-        [Header("Recognition Weights")]
-        // 下面这些权重控制候选词评分中各项因素的重要程度，分数越低越匹配。
-        [SerializeField] float m_ShapeWeight = 0.4f;
-        [SerializeField] float m_LocationWeight = 0.25f;
-        [SerializeField] float m_EndpointWeight = 0.2f;
-        [SerializeField] float m_SequenceWeight = 0.1f;
-        [SerializeField] float m_PathLengthWeight = 0.05f;
-        [SerializeField] float m_FrequencyWeight = 0.08f;
 
         [Header("State")]
         [SerializeField]
@@ -203,17 +161,13 @@ namespace VRTyping.Keyboard
         bool m_EnabledCandidateConfirmAction;
 
         SwipeKeyboardLayout m_KeyboardLayout;
-        SwipeTemplateDatabase m_TemplateDatabase;
-        SwipeWordDecoder m_WordDecoder;
-
         public string currentText => VRKeyboardTextComposer.GetText(m_OutputField);
         public bool hasPendingSwipeCandidates => m_PendingSwipeCandidates.Count > 0;
 
         void OnEnable()
         {
-            // 启用时刷新键盘/探针引用，并加载识别数据库。
+            // 启用时刷新键盘/探针引用，并配置运行时 swipe 识别器。
             RefreshReferences();
-            LoadTemplateDatabase();
             EnableCandidateInputActions();
             ClearPreview();
         }
@@ -492,36 +446,8 @@ namespace VRTyping.Keyboard
             return layout != null;
         }
 
-        void LoadTemplateDatabase()
-        {
-            // 优先使用 Inspector 指定的数据库，否则加载 Resources/SwipeTemplates。
-            var databaseAsset = m_TemplateDatabaseAsset != null
-                ? m_TemplateDatabaseAsset
-                : Resources.Load<TextAsset>("SwipeTemplates");
-
-            if (!SwipeTemplateDatabaseReader.TryLoad(databaseAsset, out m_TemplateDatabase, out var error))
-            {
-                m_WordDecoder = null;
-                Debug.LogWarning("Swipe word recognition is disabled: " + error, this);
-                return;
-            }
-
-            if (m_KeyboardLayout != null &&
-                !string.IsNullOrEmpty(m_TemplateDatabase.layoutSignature) &&
-                m_TemplateDatabase.layoutSignature != m_KeyboardLayout.signature)
-            {
-                // 布局签名不同表示模板可能是另一套键盘生成的，识别准确度会下降。
-                Debug.LogWarning("Swipe template database was generated for a different keyboard layout. Regenerate it from the component inspector.", this);
-            }
-
-            m_WordDecoder = new SwipeWordDecoder(m_TemplateDatabase);
-        }
-
         void ConfigureSwipeRecognizer()
         {
-            if (!m_UseSwipeTypingRecognizer)
-                return;
-
             if (m_SwipeRecognizer == null)
                 m_SwipeRecognizer = GetComponent<SwipeTypingRecognizer>();
 
@@ -725,29 +651,9 @@ namespace VRTyping.Keyboard
                     return false;
                 }
 
-                List<SwipeWordCandidate> candidates = null;
-                // 多字母 swipe 尝试走模板识别，取分数最低的候选词。
-                if (sequence.Length > 1 && TryDecodeWord(trace, compactKeys, out candidates))
-                {
-                    if (m_ShowCandidatesAfterSwipe && TryBuildSwipeCandidates(candidates, out var templateCandidates))
-                    {
-                        ShowCandidatePreview(templateCandidates);
-                        if (m_LogSwipeSequence)
-                            Debug.Log("Swipe sequence " + sequence + " held for template candidates. Best=" + templateCandidates[0].word, this);
-                        return true;
-                    }
-
-                    committedText = VRKeyboardTextComposer.ApplyLetterCase(
-                        candidates[0].word,
-                        m_CapsLockEnabled,
-                        m_ShiftEnabled);
-                }
-
                 if (m_LogSwipeSequence)
                     Debug.Log("Swipe sequence " + sequence + " committed as " + committedText);
 
-                if (candidates != null && m_AppendSpaceAfterSwipeWord)
-                    committedText += " ";
                 VRKeyboardTextComposer.AppendText(m_OutputField, committedText);
 
                 // Shift 作为一次性状态，提交一次内容后自动关闭。
@@ -773,7 +679,7 @@ namespace VRTyping.Keyboard
         bool TryRecognizeWord(SwipeTrace trace, out List<SwipeCandidate> candidates)
         {
             candidates = null;
-            if (!m_UseSwipeTypingRecognizer || m_SwipeRecognizer == null || trace == null || trace.gesturePoints.Count < 2)
+            if (m_SwipeRecognizer == null || trace == null || trace.gesturePoints.Count < 2)
                 return false;
 
             candidates = m_SwipeRecognizer.Recognize(trace.gesturePoints, m_CandidateCount);
@@ -796,30 +702,6 @@ namespace VRTyping.Keyboard
             m_NextCandidateMoveTime = 0f;
             m_CandidateConfirmWasHeld = ReadCandidateConfirmHeld();
             RefreshCandidatePreview();
-        }
-
-        bool TryBuildSwipeCandidates(List<SwipeWordCandidate> wordCandidates, out List<SwipeCandidate> candidates)
-        {
-            candidates = null;
-            if (wordCandidates == null || wordCandidates.Count == 0)
-                return false;
-
-            candidates = new List<SwipeCandidate>(wordCandidates.Count);
-            for (var i = 0; i < wordCandidates.Count; i++)
-            {
-                var wordCandidate = wordCandidates[i];
-                if (string.IsNullOrEmpty(wordCandidate.word))
-                    continue;
-
-                candidates.Add(new SwipeCandidate
-                {
-                    word = wordCandidate.word,
-                    finalScore = wordCandidate.score,
-                    confidence = 1f / (1f + Mathf.Max(0f, wordCandidate.score))
-                });
-            }
-
-            return candidates.Count > 0;
         }
 
         void RefreshCandidatePreview()
@@ -859,26 +741,6 @@ namespace VRTyping.Keyboard
                 m_ShiftEnabled = false;
 
             ClearPreview();
-        }
-
-        bool TryDecodeWord(SwipeTrace trace, List<string> compactKeys, out List<SwipeWordCandidate> candidates)
-        {
-            // 把本次轨迹和滑过键序列交给解码器，得到候选词列表。
-            candidates = null;
-            return m_WordDecoder != null && m_WordDecoder.TryDecode(
-                trace.points,
-                compactKeys,
-                m_CandidateCount,
-                       m_CandidateEndpointRadius,
-                       m_MaxSequenceLengthDifference,
-                       m_DtwWindowRadius,
-                m_ShapeWeight,
-                m_LocationWeight,
-                m_EndpointWeight,
-                m_SequenceWeight,
-                m_PathLengthWeight,
-                m_FrequencyWeight,
-                out candidates);
         }
 
         string BuildSwipeSequence(List<string> compactKeys)

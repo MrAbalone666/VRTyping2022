@@ -632,17 +632,10 @@ MonoBehaviour:
   m_RequireTriggerForSwipe: 1
   m_RepeatedLetterDwellTime: 0.22
   m_TemplateWordList: {fileID: 4900000, guid: 4d739e4fc3144791a12e8cfa0b4ac913, type: 3}
-  m_TemplateDatabaseAsset: {fileID: 0}
-  m_TemplateSampleCount: 64
-  m_MaxTemplateWords: 10000
   m_CandidateCount: 5
   m_MinTrajectorySampleDistance: 0.01
-  m_CandidateEndpointRadius: 0.18
-  m_MaxSequenceLengthDifference: 6
-  m_DtwWindowRadius: 10
   m_AppendSpaceAfterSwipeWord: 1
   m_SwipeRecognizer: {fileID: 0}
-  m_UseSwipeTypingRecognizer: 1
   m_CandidateMoveAction: {fileID: 0}
   m_CandidateConfirmAction: {fileID: 0}
   m_ShowCandidatesAfterSwipe: 1
@@ -651,12 +644,6 @@ MonoBehaviour:
   m_CandidateConfirmThreshold: 0.5
   m_CandidateNormalColor: {r: 1, g: 1, b: 1, a: 1}
   m_CandidateSelectedColor: {r: 0.2, g: 0.75, b: 1, a: 1}
-  m_ShapeWeight: 0.4
-  m_LocationWeight: 0.25
-  m_EndpointWeight: 0.2
-  m_SequenceWeight: 0.1
-  m_PathLengthWeight: 0.05
-  m_FrequencyWeight: 0.08
   m_CapsLockEnabled: 0
   m_ShiftEnabled: 0
   m_UseTabCharacter: 0
@@ -2914,7 +2901,7 @@ MonoBehaviour:
   m_ControllerHand: 1
   m_StickVisual: {fileID: 2104107764}
   m_ProbeVisual: {fileID: 1126385570}
-  m_LengthAdjustAction: {fileID: -8666952849799569744, guid: c348712bda248c246b8c49b3db54643f, type: 3}
+  m_LengthAdjustAction: {fileID: -60998027439631388, guid: c348712bda248c246b8c49b3db54643f, type: 3}
   m_ActivationDelay: 0.5
   m_StickLength: 0.3
   m_MinStickLength: 0.08
@@ -2941,7 +2928,7 @@ MonoBehaviour:
   m_ControllerHand: 1
   m_Visual: {fileID: 1126385570}
   m_BaseSurfaceOffset: 0.01
-  m_PressValueAction: {fileID: -60998027439631388, guid: c348712bda248c246b8c49b3db54643f, type: 3}
+  m_PressValueAction: {fileID: -4289430672226363583, guid: c348712bda248c246b8c49b3db54643f, type: 3}
   m_MaxPressDepth: 0.5
   m_FollowRayEndWhenNoHit: 1
   m_NoHitDistance: 5
@@ -4879,7 +4866,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1994949203153378060, guid: 77e7c27b2c5525e4aa8cc9f99d654486, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2243020122175513880, guid: 77e7c27b2c5525e4aa8cc9f99d654486, type: 3}
       propertyPath: m_SizeDelta.x

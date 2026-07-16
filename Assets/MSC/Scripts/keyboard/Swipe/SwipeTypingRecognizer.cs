@@ -73,34 +73,34 @@ namespace VRTyping.Keyboard
         const float Epsilon = 0.000001f;
 
         [Header("Vocabulary")]
-        [SerializeField] TextAsset m_WordListAsset;
-        [SerializeField] [Min(1)] int m_MaxWords = 10000;
+        public TextAsset m_WordListAsset;
+        public int m_MaxWords = 20000;
 
         [Header("Trajectory Preprocessing")]
-        [SerializeField] [Range(16, 128)] int m_ResampleCount = 64;
-        [SerializeField] [Min(0.0001f)] float m_MinDistance = 0.004f;
-        [SerializeField] [Range(1, 5)] int m_MovingAverageRadius = 2;
-        [SerializeField] [Min(1f)] float m_OutlierSigma = 3.0f;
-        [SerializeField] bool m_NormalizeRotation;
+        public int m_ResampleCount = 64;
+        public float m_MinDistance = 0.004f;
+        public int m_MovingAverageRadius = 2;
+        public float m_OutlierSigma = 3.0f;
+        public bool m_NormalizeRotation;
 
         [Header("Keyboard Model")]
-        [SerializeField] [Min(0.001f)] float m_KeyRadius = 0.095f;
-        [SerializeField] [Min(0.001f)] float m_KeyProbabilitySigma = 0.075f;
+        public float m_KeyRadius = 0.095f;
+        public float m_KeyProbabilitySigma = 0.075f;
 
         [Header("Candidate Generation")]
-        [SerializeField] [Range(1, 10)] int m_DefaultTopK = 5;
-        [SerializeField] [Range(32, 5000)] int m_MaxCandidateTemplates = 2000;
-        [SerializeField] [Range(1, 6)] int m_SoftEndpointLetterCount = 3;
-        [SerializeField] [Range(0f, 1f)] float m_StartMismatchPenalty = 0.18f;
-        [SerializeField] [Range(0f, 1f)] float m_EndMismatchPenalty = 0.18f;
+        public int m_DefaultTopK = 5;
+        public int m_MaxCandidateTemplates = 2000;
+        public int m_SoftEndpointLetterCount = 3;
+        public float m_StartMismatchPenalty = 0.18f;
+        public float m_EndMismatchPenalty = 0.18f;
 
         [Header("Scoring")]
-        [SerializeField] SwipeScoreWeights m_Weights = new SwipeScoreWeights();
-        [SerializeField] [Range(1, 32)] int m_DtwWindowRadius = 10;
-        [SerializeField] [Range(0.01f, 1f)] float m_ConfidenceScale = 0.20f;
-        [SerializeField] [Range(0f, 1f)] float m_ConfidenceScoreWeight = 0.85f;
-        [SerializeField] [Range(0f, 1f)] float m_ConfidenceSpeedWeight = 0.15f;
-        [SerializeField] [Range(0f, 1f)] float m_MinAutoCommitConfidence = 0.45f;
+        public SwipeScoreWeights m_Weights = new SwipeScoreWeights();
+        public int m_DtwWindowRadius = 10;
+        public float m_ConfidenceScale = 0.20f;
+        public float m_ConfidenceScoreWeight = 0.85f;
+        public float m_ConfidenceSpeedWeight = 0.15f;
+        public float m_MinAutoCommitConfidence = 0.45f;
 
         readonly List<GesturePoint> m_CurrentGesture = new List<GesturePoint>(128);
         readonly List<WordTemplate> m_Templates = new List<WordTemplate>(5000);

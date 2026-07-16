@@ -1165,8 +1165,8 @@ namespace VRTyping.Keyboard
                 if (m_RightControllerVisualRoot == null)
                     m_RightControllerVisualRoot = FindControllerVisualRoot("Right Controller");
 
-                m_LeftControllerRenderers = CacheRendererStates(m_LeftControllerVisualRoot);
-                m_RightControllerRenderers = CacheRendererStates(m_RightControllerVisualRoot);
+                m_LeftControllerRenderers = CacheRendererStates(m_LeftControllerVisualRoot, m_LeftControllerRenderers);
+                m_RightControllerRenderers = CacheRendererStates(m_RightControllerVisualRoot, m_RightControllerRenderers);
             }
 
             if (m_HideControllerHintsInHandMode)
@@ -1177,8 +1177,8 @@ namespace VRTyping.Keyboard
                 if (m_RightControllerHintRoot == null)
                     m_RightControllerHintRoot = FindControllerHintRoot(k_RightControllerHintNames, "Right Controller");
 
-                m_LeftControllerHintState = CacheGameObjectState(m_LeftControllerHintRoot);
-                m_RightControllerHintState = CacheGameObjectState(m_RightControllerHintRoot);
+                m_LeftControllerHintState = CacheGameObjectState(m_LeftControllerHintRoot, m_LeftControllerHintState);
+                m_RightControllerHintState = CacheGameObjectState(m_RightControllerHintRoot, m_RightControllerHintState);
             }
         }
 
@@ -1290,33 +1290,62 @@ namespace VRTyping.Keyboard
             return null;
         }
 
-        RendererState[] CacheRendererStates(Transform root)
+        RendererState[] CacheRendererStates(Transform root, RendererState[] existingStates)
         {
             // 隐藏控制器时只改 Renderer.enabled，不直接禁用根物体，避免影响交互组件。
             if (root == null)
-                return null;
+                return existingStates;
 
             var renderers = root.GetComponentsInChildren<Renderer>(true);
-            var states = new RendererState[renderers.Length];
+            var states = new List<RendererState>((existingStates != null ? existingStates.Length : 0) + renderers.Length);
+            if (existingStates != null)
+            {
+                for (var i = 0; i < existingStates.Length; i++)
+                {
+                    if (existingStates[i].renderer != null && !ContainsRenderer(states, existingStates[i].renderer))
+                        states.Add(existingStates[i]);
+                }
+            }
             for (var i = 0; i < renderers.Length; i++)
             {
-                states[i] = new RendererState
+                var renderer = renderers[i];
+                if (renderer == null || ContainsRenderer(states, renderer))
+                    continue;
+
+                states.Add(new RendererState
                 {
-                    renderer = renderers[i],
-                    initiallyEnabled = renderers[i] != null && renderers[i].enabled,
-                };
+                    renderer = renderer,
+                    initiallyEnabled = renderer.enabled,
+                });
             }
 
-            return states;
+            return states.Count > 0 ? states.ToArray() : null;
         }
 
-        GameObjectState CacheGameObjectState(Transform root)
+        bool ContainsRenderer(List<RendererState> states, Renderer renderer)
         {
+            for (var i = 0; i < states.Count; i++)
+            {
+                if (states[i].renderer == renderer)
+                    return true;
+            }
+
+            return false;
+        }
+
+        GameObjectState CacheGameObjectState(Transform root, GameObjectState existingState)
+        {
+            if (root == null)
+                return existingState;
+
+            if (existingState.gameObject == root.gameObject)
+                return existingState;
+
             // 控制器提示通常是纯显示对象，可以直接 SetActive，并保留初始 active 状态。
             return new GameObjectState
             {
-                gameObject = root != null ? root.gameObject : null,
-                initiallyActive = root != null && root.gameObject.activeSelf,
+                gameObject = root.gameObject,
+                initiallyActive = root.gameObject.activeSelf,
             };
         }
 
