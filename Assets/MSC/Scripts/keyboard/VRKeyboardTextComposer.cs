@@ -1,9 +1,49 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using TMPro;
 
 namespace VRTyping.Keyboard
 {
+    public enum VRKeyboardPhysicalActionKind
+    {
+        Key,
+        Swipe,
+        Backspace,
+        Shift,
+        CapsLock,
+        CandidateSelection,
+    }
+
+    // 统一发布键盘层的物理输入动作，供实验记录器统计。
+    public static class VRKeyboardInputTelemetry
+    {
+        public static event Action<VRKeyboardPhysicalActionKind> PhysicalActionRecorded;
+
+        public static void RecordKeyAction(string keyId)
+        {
+            var kind = keyId == "Back"
+                ? VRKeyboardPhysicalActionKind.Backspace
+                : keyId == "Cap"
+                    ? VRKeyboardPhysicalActionKind.CapsLock
+                    : keyId == "Shift" || keyId == "Shift_1"
+                        ? VRKeyboardPhysicalActionKind.Shift
+                        : VRKeyboardPhysicalActionKind.Key;
+
+            PhysicalActionRecorded?.Invoke(kind);
+        }
+
+        public static void RecordSwipeAction()
+        {
+            PhysicalActionRecorded?.Invoke(VRKeyboardPhysicalActionKind.Swipe);
+        }
+
+        public static void RecordCandidateSelectionAction()
+        {
+            PhysicalActionRecorded?.Invoke(VRKeyboardPhysicalActionKind.CandidateSelection);
+        }
+    }
+
     // VR 键盘文本组合工具：把按键 ID 转成实际输入内容，并写入 TMP_InputField。
     public static class VRKeyboardTextComposer
     {

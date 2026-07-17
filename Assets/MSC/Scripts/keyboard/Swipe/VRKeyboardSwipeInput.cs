@@ -268,7 +268,7 @@ namespace VRTyping.Keyboard
 
             var confirmHeld = ReadCandidateConfirmHeld();
             if (confirmHeld && !m_CandidateConfirmWasHeld)
-                CommitPendingCandidate(m_SelectedCandidateIndex);
+                CommitPendingCandidate(m_SelectedCandidateIndex, true);
 
             m_CandidateConfirmWasHeld = confirmHeld;
         }
@@ -387,14 +387,14 @@ namespace VRTyping.Keyboard
                 var index = keyId[0] - '1';
                 if (index >= 0 && index < m_PendingSwipeCandidates.Count)
                 {
-                    CommitPendingCandidate(index);
+                    CommitPendingCandidate(index, false);
                     return true;
                 }
             }
 
             if (keyId == "Space" || keyId == "Enter")
             {
-                CommitPendingCandidate(0);
+                CommitPendingCandidate(0, false);
                 return true;
             }
 
@@ -614,6 +614,17 @@ namespace VRTyping.Keyboard
             if (compactKeys.Count == 0)
                 return false;
 
+            // 单词轨迹算一次 Swipe；单独触发 Back/Shift/CapsLock 等功能键时保留键类型统计。
+            if (compactKeys.Count == 1 &&
+                !(compactKeys[0].Length == 1 && char.IsLetter(compactKeys[0][0])))
+            {
+                VRKeyboardInputTelemetry.RecordKeyAction(compactKeys[0]);
+            }
+            else
+            {
+                VRKeyboardInputTelemetry.RecordSwipeAction();
+            }
+
             if (compactKeys.Count == 1 && TryHandleCandidateSelection(compactKeys[0]))
                 return false;
 
@@ -722,10 +733,15 @@ namespace VRTyping.Keyboard
             m_SwipePreviewLabel.text = string.Join("  ", words);
         }
 
-        void CommitPendingCandidate(int index)
+        void CommitPendingCandidate(int index, bool recordPhysicalAction)
         {
             if (index < 0 || index >= m_PendingSwipeCandidates.Count)
                 return;
+
+            // 控制器确认键不经过普通键盘控制器，需要在这里单独记录。
+            // 触摸数字/Enter 选择候选时，外层按键或 Swipe 已记录，避免重复累计。
+            if (recordPhysicalAction)
+                VRKeyboardInputTelemetry.RecordCandidateSelectionAction();
 
             var committedText = VRKeyboardTextComposer.ApplyLetterCase(
                 m_PendingSwipeCandidates[index].word,

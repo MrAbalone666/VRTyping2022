@@ -90,6 +90,10 @@ namespace VRTyping.Keyboard
 
             Debug.Log($"Resolved keyId: {keyId}");
 
+            // 每次真实按键都算一个物理动作。先记录再修改文本，保证句末按键归入当前句。
+            // Back 在空文本时也会在这里被计数。
+            VRKeyboardInputTelemetry.RecordKeyAction(keyId);
+
             // 交给文本组合器处理功能键、大小写、符号映射，并写入输出框。
             if (m_SwipeInput != null && m_SwipeInput.TryHandleCandidateSelection(keyId))
                 return;
