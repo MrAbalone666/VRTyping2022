@@ -12,7 +12,7 @@ namespace VRTyping.Tests
     public class ResultOutput : MonoBehaviour
     {
         // CSV 数据结构版本。以后增删列时可以提高版本号，方便区分不同格式的数据。
-        const int SchemaVersion = 1;
+        const int SchemaVersion = 2;
 
         // 一次测试的汇总数据文件名。
         const string TrialFileName = "trial_results.csv";
@@ -127,10 +127,10 @@ namespace VRTyping.Tests
             public string TrialId;
 
             // 试次开始的 UTC 时间，使用 ISO 8601 格式保存。
-            public string StartTimestampUtc;
+            public string StartTimestampLocal;
 
             // 试次结束的 UTC 时间，使用 ISO 8601 格式保存。
-            public string EndTimestampUtc;
+            public string EndTimestampLocal;
 
             // 参与者编号。
             public string ParticipantId;
@@ -197,7 +197,7 @@ namespace VRTyping.Tests
         string m_TrialId;
 
         // 当前试次开始时的 UTC 时间字符串。
-        string m_StartTimestampUtc;
+        string m_StartTimestampLocal;
 
         // 是否已经调用 PrepareTrial 完成试次初始化。
         bool m_TrialPrepared;
@@ -230,7 +230,7 @@ namespace VRTyping.Tests
 
         //结果自定义输出路径
         public bool m_UseCustomExportPath = false;
-        public string m_CustomExportPath = @"E:\MSC\VRTyping2022\Temp\Output";
+        public string m_CustomExportPath = @"E:\MSC\VRTyping2022\ExperimentResults";
 
         // CSV 实际保存目录：Application.persistentDataPath/配置的文件夹名。
         //public string exportDirectory => Path.Combine(Application.persistentDataPath, m_ExportFolderName);
@@ -279,7 +279,7 @@ namespace VRTyping.Tests
             // 同一次程序运行内按 T001、T002……递增，便于人工查看和筛选。
             m_TrialId = "T" + s_NextTrialNumber.ToString("D3", s_InvariantCulture);
             s_NextTrialNumber++;
-            m_StartTimestampUtc = string.Empty;
+            m_StartTimestampLocal = string.Empty;
             m_TrialPrepared = true;
             m_TrialStarted = false;
             m_TrialCompleted = false;
@@ -306,7 +306,7 @@ namespace VRTyping.Tests
             m_SentenceStartedAt = Time.realtimeSinceStartupAsDouble;
 
             // 时间戳使用 UTC ISO 8601，便于跨设备和跨时区分析。
-            m_StartTimestampUtc = DateTimeOffset.UtcNow.ToString("O", s_InvariantCulture);
+            m_StartTimestampLocal = DateTimeOffset.Now.ToString("O", s_InvariantCulture);
         }
 
         // 开始记录下一句话，并清空上一句话的独立动作计数。
@@ -416,8 +416,8 @@ namespace VRTyping.Tests
                 SchemaVersion = SchemaVersion,
                 SessionId = s_SessionId,
                 TrialId = m_TrialId,
-                StartTimestampUtc = m_StartTimestampUtc,
-                EndTimestampUtc = DateTimeOffset.UtcNow.ToString("O", s_InvariantCulture),
+                StartTimestampLocal = m_StartTimestampLocal,
+                EndTimestampLocal = DateTimeOffset.Now.ToString("O", s_InvariantCulture),
                 ParticipantId = m_ParticipantId ?? string.Empty,
                 Method = method,
                 IsPractice = m_IsPractice,
@@ -523,7 +523,7 @@ namespace VRTyping.Tests
         static string TrialHeader()
         {
             return Csv(
-                "SchemaVersion", "SessionId", "TrialId", "StartTimestampUtc", "EndTimestampUtc",
+                "SchemaVersion", "SessionId", "TrialId", "StartTimestampLocal", "EndTimestampLocal",
                 "ParticipantId", "InputMethod", "IsPractice", "DurationSeconds", "GrossWPM",
                 "EffectiveWPM", "LevenshteinDistance", "CER", "AccuracyPercent",
                 "PhysicalActionCount", "CommittedCharacterCount", "BackspaceActionCount",
@@ -536,7 +536,7 @@ namespace VRTyping.Tests
         {
             return Csv(
                 value.SchemaVersion.ToString(s_InvariantCulture), value.SessionId, value.TrialId,
-                value.StartTimestampUtc, value.EndTimestampUtc, value.ParticipantId, value.Method.ToString(),
+                value.StartTimestampLocal, value.EndTimestampLocal, value.ParticipantId, value.Method.ToString(),
                 Bool(value.IsPractice), Number(value.DurationSeconds), Number(value.GrossWPM),
                 Number(value.EffectiveWPM), value.LevenshteinDistance.ToString(s_InvariantCulture),
                 Number(value.CER), Number(value.AccuracyPercent),

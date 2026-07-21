@@ -33,9 +33,19 @@ namespace VRTyping.Tests
        
 
         [Header("Test")]
+        // 勾选表示练习模式，取消勾选表示正式测试。
+        // 状态会与 ResultOutput.m_IsPractice 保持一致。
+        public Toggle m_IsPracticeToggle;
+
         // 测试句子列表。可以在 Inspector 里放多个句子。
         // 如果开启 m_AutoNextSentences，当前句输入结束后会自动切到下一句。
         public string[] m_Sentences =
+        {
+            "This is a sentence."
+        };
+
+        // 练习模式使用的句子列表，不会与正式测试句子混用。
+        public string[] m_PracticeSentences =
         {
             "This is a testing sentence."
         };
@@ -146,6 +156,7 @@ namespace VRTyping.Tests
         {
             // 场景加载时先补齐必要引用和运行时 UI，再把测试重置到初始状态。
             CacheReferences();
+            SynchronizePracticeToggle();
             EnsureRuntimeUi();
             ResetTest();
         }
@@ -156,6 +167,8 @@ namespace VRTyping.Tests
             // VR 键盘、物理键盘或代码只要修改了 m_InputField.text，都会进入 HandleInputChanged。
             if (m_InputField != null)
                 m_InputField.onValueChanged.AddListener(HandleInputChanged);
+            if (m_IsPracticeToggle != null)
+                m_IsPracticeToggle.onValueChanged.AddListener(HandlePracticeModeChanged);
             VRKeyboardInputTelemetry.PhysicalActionRecorded += HandlePhysicalInputAction;
         }
 
@@ -164,6 +177,8 @@ namespace VRTyping.Tests
             // 组件禁用时移除监听，避免对象重复启用后同一个回调被绑定多次。
             if (m_InputField != null)
                 m_InputField.onValueChanged.RemoveListener(HandleInputChanged);
+            if (m_IsPracticeToggle != null)
+                m_IsPracticeToggle.onValueChanged.RemoveListener(HandlePracticeModeChanged);
             VRKeyboardInputTelemetry.PhysicalActionRecorded -= HandlePhysicalInputAction;
         }
 
@@ -185,7 +200,7 @@ namespace VRTyping.Tests
 
         public void ResetTest()
         {
-            // 找到第一个非空句子作为测试起点。
+            // 根据练习/正式模式选择句库，再找到第一个非空句子作为试次起点。
             m_CurrentSentenceIndex = FindFirstSentenceIndex();
             m_TargetSentence = GetSentence(m_CurrentSentenceIndex);
 
@@ -259,6 +274,20 @@ namespace VRTyping.Tests
             // 场景没有手动挂 ResultOutput 时自动补上，保证测试结束仍能导出。
             if (m_ResultOutput == null)
                 m_ResultOutput = gameObject.AddComponent<ResultOutput>();
+
+            // Inspector 没有手动挂载时，按对象名自动寻找练习模式 Toggle。
+            if (m_IsPracticeToggle == null)
+            {
+                var allToggles = FindObjectsOfType<Toggle>(true);
+                for (var i = 0; i < allToggles.Length; i++)
+                {
+                    if (allToggles[i] != null && allToggles[i].name == "IsPracticeToggle")
+                    {
+                        m_IsPracticeToggle = allToggles[i];
+                        break;
+                    }
+                }
+            }
 
             // Timer 文本如果没有手动挂载，则按对象名 RemainingTime 查找。
             if (m_TimerText == null)
@@ -690,7 +719,7 @@ namespace VRTyping.Tests
             }
 
             if (m_ResultTitleText != null)
-                m_ResultTitleText.text = "Your Test Score";
+                m_ResultTitleText.text = IsPracticeMode ? "Your Practice Score" : "Your Test Score";
 
             if (m_ResultStatsText != null)
             {
@@ -711,12 +740,13 @@ namespace VRTyping.Tests
         int FindFirstSentenceIndex()
         {
             // 找到第一个非空句子，避免数组前面有空字符串时测试显示为空。
-            if (m_Sentences == null)
+            var sentences = GetActiveSentences();
+            if (sentences == null)
                 return 0;
 
-            for (var i = 0; i < m_Sentences.Length; i++)
+            for (var i = 0; i < sentences.Length; i++)
             {
-                if (!string.IsNullOrEmpty(m_Sentences[i]))
+                if (!string.IsNullOrEmpty(sentences[i]))
                     return i;
             }
 
@@ -727,12 +757,13 @@ namespace VRTyping.Tests
         {
             // 从指定位置开始查找下一个非空句子。
             sentenceIndex = -1;
-            if (m_Sentences == null)
+            var sentences = GetActiveSentences();
+            if (sentences == null)
                 return false;
 
-            for (var i = Mathf.Max(0, startIndex); i < m_Sentences.Length; i++)
+            for (var i = Mathf.Max(0, startIndex); i < sentences.Length; i++)
             {
-                if (!string.IsNullOrEmpty(m_Sentences[i]))
+                if (!string.IsNullOrEmpty(sentences[i]))
                 {
                     sentenceIndex = i;
                     return true;
@@ -744,21 +775,65 @@ namespace VRTyping.Tests
 
         string GetSentence(int sentenceIndex)
         {
-            // 安全获取句子：数组为空、索引越界或句子为空时，回退到默认测试句。
-            if (m_Sentences == null || m_Sentences.Length == 0)
-                return "This is a testing sentence.";
+            // 安全获取当前模式的句子；句库为空时使用对应模式的默认句子。
+            var sentences = GetActiveSentences();
+            var fallbackSentence = IsPracticeMode
+                ? "This is a testing sentence."
+                : "This is a sentence.";
+
+            if (sentences == null || sentences.Length == 0)
+                return fallbackSentence;
 
             if (sentenceIndex >= 0 &&
-                sentenceIndex < m_Sentences.Length &&
-                !string.IsNullOrEmpty(m_Sentences[sentenceIndex]))
+                sentenceIndex < sentences.Length &&
+                !string.IsNullOrEmpty(sentences[sentenceIndex]))
             {
-                return m_Sentences[sentenceIndex];
+                return sentences[sentenceIndex];
             }
 
             var firstSentenceIndex = FindFirstSentenceIndex();
-            return !string.IsNullOrEmpty(m_Sentences[firstSentenceIndex])
-                ? m_Sentences[firstSentenceIndex]
-                : "This is a testing sentence.";
+            return firstSentenceIndex >= 0 &&
+                   firstSentenceIndex < sentences.Length &&
+                   !string.IsNullOrEmpty(sentences[firstSentenceIndex])
+                ? sentences[firstSentenceIndex]
+                : fallbackSentence;
+        }
+
+        // ResultOutput 是练习/正式状态的数据来源。
+        bool IsPracticeMode => m_ResultOutput != null && m_ResultOutput.m_IsPractice;
+
+        // 当前是练习模式就返回练习句库，否则返回正式测试句库。
+        string[] GetActiveSentences()
+        {
+            return IsPracticeMode ? m_PracticeSentences : m_Sentences;
+        }
+
+        // 场景启动时让 Toggle 显示 ResultOutput 当前保存的状态，不触发切换事件。
+        void SynchronizePracticeToggle()
+        {
+            if (m_IsPracticeToggle != null)
+                m_IsPracticeToggle.SetIsOnWithoutNotify(IsPracticeMode);
+        }
+
+        // Toggle 改变时同步 ResultOutput，并使用对应句库重新开始试次。
+        void HandlePracticeModeChanged(bool isPractice)
+        {
+            SetPracticeMode(isPractice);
+        }
+
+        // 可供 Toggle、Button 或其他脚本调用的统一模式切换入口。
+        public void SetPracticeMode(bool isPractice)
+        {
+            if (m_ResultOutput == null)
+                CacheReferences();
+
+            if (m_ResultOutput != null)
+                m_ResultOutput.m_IsPractice = isPractice;
+
+            if (m_IsPracticeToggle != null && m_IsPracticeToggle.isOn != isPractice)
+                m_IsPracticeToggle.SetIsOnWithoutNotify(isPractice);
+
+            ResetTest();
         }
 
         string GetPlayerText()
@@ -789,9 +864,19 @@ namespace VRTyping.Tests
             if (m_CurrentSentenceResultRecorded || m_ResultOutput == null)
                 return;
 
+            playerText = playerText ?? string.Empty;
+
+            // 超时时如果当前句一个字符都没有输入，就不把它写入逐句结果。
+            if (!completed && playerText.Length == 0)
+            {
+                m_CurrentSentenceResultRecorded = true;
+                return;
+            }
+
             GetSentenceStats(
                 playerText,
                 m_TargetSentence,
+                !completed,
                 out var typedChars,
                 out var targetChars,
                 out var typos);
@@ -814,7 +899,13 @@ namespace VRTyping.Tests
                 return;
 
             // 当前句完成后，把本句统计加入累计统计。
-            GetSentenceStats(playerText, m_TargetSentence, out var typedChars, out var targetChars, out var typos);
+            GetSentenceStats(
+                playerText,
+                m_TargetSentence,
+                false,
+                out var typedChars,
+                out var targetChars,
+                out var typos);
             m_CompletedTypedChars += typedChars;
             m_CompletedTargetChars += targetChars;
             m_CompletedTypos += typos;
@@ -832,28 +923,52 @@ namespace VRTyping.Tests
             if (m_CurrentSentenceCommitted)
                 return;
 
-            // 测试可能因为时间结束而停止，此时当前句未必达到目标长度。
-            // 所以要把当前未完成句子的输入也纳入最终结果。
-            GetSentenceStats(GetPlayerText(), m_TargetSentence, out var currentTypedChars, out var currentTargetChars, out var currentTypos);
+            var currentPlayerText = GetPlayerText();
+
+            // 当前句完全没有开始输入时，不把它计入总字符数、错误数和准确率。
+            if (string.IsNullOrEmpty(currentPlayerText))
+                return;
+
+            // 对超时未完成的当前句，只比较玩家已经尝试输入的目标前缀。
+            // 计时结束后尚未来得及输入的目标后缀不会被当作删除错误。
+            GetSentenceStats(
+                currentPlayerText,
+                m_TargetSentence,
+                true,
+                out var currentTypedChars,
+                out var currentTargetChars,
+                out var currentTypos);
             typedChars += currentTypedChars;
             targetChars += currentTargetChars;
             typos += currentTypos;
         }
 
-        void GetSentenceStats(string playerText, string targetSentence, out int typedChars, out int targetChars, out int typos)
+        void GetSentenceStats(
+            string playerText,
+            string targetSentence,
+            bool compareAttemptedPrefixOnly,
+            out int typedChars,
+            out int targetChars,
+            out int typos)
         {
             // 统一把 null 转为空字符串，保证下面的长度和距离计算不会报错。
             playerText = playerText ?? string.Empty;
             targetSentence = targetSentence ?? string.Empty;
 
+            // 超时未完成时，只保留与输入长度对应的目标前缀。
+            // 如果玩家输入超过目标长度，仍保留完整目标，让多余字符计为插入错误。
+            var comparisonTarget = targetSentence;
+            if (compareAttemptedPrefixOnly && playerText.Length < targetSentence.Length)
+                comparisonTarget = targetSentence.Substring(0, playerText.Length);
+
             // typedChars 是玩家实际输入字符数，包含空格和标点。
             typedChars = playerText.Length;
 
-            // targetChars 是目标句字符数，用于 CER 分母。
-            targetChars = targetSentence.Length;
+            // 未完成句使用已尝试目标前缀的长度，完成句使用完整目标长度。
+            targetChars = comparisonTarget.Length;
 
             // typos 使用编辑距离：替换、插入、删除各算 1 次错误。
-            typos = ComputeLevenshteinDistance(playerText, targetSentence);
+            typos = ComputeLevenshteinDistance(playerText, comparisonTarget);
         }
 
         void AppendColoredChar(StringBuilder builder, char value, Color color)

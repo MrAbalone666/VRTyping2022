@@ -87,6 +87,11 @@ namespace VRTyping.Keyboard
         float m_MinTrajectorySampleDistance = 0.01f;
 
         [SerializeField]
+        [Min(32)]
+        [Tooltip("Maximum stored trajectory points. Older points are compacted when this limit is reached.")]
+        int m_MaxTrajectoryPoints = 256;
+
+        [SerializeField]
         // 成功识别成单词后是否自动追加空格。
         bool m_AppendSpaceAfterSwipeWord = true;
 
@@ -154,11 +159,16 @@ namespace VRTyping.Keyboard
 
         readonly List<SwipeCandidate> m_PendingSwipeCandidates = new List<SwipeCandidate>(5);
         readonly List<UnityEngine.XR.InputDevice> m_ControllerDevices = new List<UnityEngine.XR.InputDevice>(4);
+        readonly Collider[] m_KeyOverlapBuffer = new Collider[32];
         int m_SelectedCandidateIndex;
         float m_NextCandidateMoveTime;
+        float m_NextProbeRefreshTime;
         bool m_CandidateConfirmWasHeld;
         bool m_EnabledCandidateMoveAction;
         bool m_EnabledCandidateConfirmAction;
+        bool m_RecognizerConfigured;
+
+        const float ProbeRefreshInterval = 0.25f;
 
         SwipeKeyboardLayout m_KeyboardLayout;
         public string currentText => VRKeyboardTextComposer.GetText(m_OutputField);
@@ -182,9 +192,17 @@ namespace VRTyping.Keyboard
 
         void Update()
         {
-            // 如果运行时生成/销毁了按键或探针，尝试重新刷新引用。
-            if (m_Keys.Count == 0 || m_ProbeColliders.Count == 0)
-                RefreshReferences();
+            if (m_Keys.Count == 0)
+                RefreshKeyboardReferences();
+
+            // Quest Link can temporarily disable the probe collider when tracking or
+            // the ray endpoint is lost. Refresh only the cheap probe cache here;
+            // rebuilding the word database from Update stalls the main thread.
+            if (m_ProbeColliders.Count == 0 && Time.unscaledTime >= m_NextProbeRefreshTime)
+            {
+                RefreshProbeReferences();
+                m_NextProbeRefreshTime = Time.unscaledTime + ProbeRefreshInterval;
+            }
 
             // 每个探针独立更新自己的滑动轨迹。
             if (m_PendingSwipeCandidates.Count > 0)
@@ -196,9 +214,19 @@ namespace VRTyping.Keyboard
             for (var i = m_ProbeColliders.Count - 1; i >= 0; i--)
             {
                 var probeCollider = m_ProbeColliders[i];
-                if (probeCollider == null || !probeCollider.enabled || !probeCollider.gameObject.activeInHierarchy || !IsProbeActive(probeCollider))
+                if (probeCollider == null || !probeCollider.gameObject.activeInHierarchy || !IsProbeActive(probeCollider))
                 {
+                    if (probeCollider != null)
+                        m_ActiveTraces.Remove(probeCollider);
                     m_ProbeColliders.RemoveAt(i);
+                    continue;
+                }
+
+                // Keep temporarily disabled colliders cached so a tracking dropout
+                // cannot trigger a refresh/rebuild loop. Discard its partial trace.
+                if (!probeCollider.enabled)
+                {
+                    m_ActiveTraces.Remove(probeCollider);
                     continue;
                 }
 
@@ -409,9 +437,14 @@ namespace VRTyping.Keyboard
 
         public void RefreshReferences()
         {
-            // 收集本键盘下的按键，以及场景中所有按压探针碰撞体。
+            RefreshKeyboardReferences();
+            RefreshProbeReferences();
+            ConfigureSwipeRecognizer();
+        }
+
+        void RefreshKeyboardReferences()
+        {
             m_Keys.Clear();
-            m_ProbeColliders.Clear();
 
             var keys = GetComponentsInChildren<VRKeyboardKey>(true);
             for (var i = 0; i < keys.Length; i++)
@@ -419,6 +452,13 @@ namespace VRTyping.Keyboard
                 if (keys[i] != null)
                     m_Keys.Add(keys[i]);
             }
+
+            SwipeKeyboardLayout.TryCreate(transform, m_Keys, out m_KeyboardLayout);
+        }
+
+        void RefreshProbeReferences()
+        {
+            m_ProbeColliders.Clear();
 
             var probes = FindObjectsOfType<VRKeyboardPressProbe>(true);
             for (var i = 0; i < probes.Length; i++)
@@ -430,13 +470,11 @@ namespace VRTyping.Keyboard
                 for (var j = 0; j < colliders.Length; j++)
                 {
                     var collider = colliders[j];
-                    if (collider != null && collider.enabled && collider.gameObject.activeInHierarchy && !m_ProbeColliders.Contains(collider))
+                    // Keep known XR colliders cached while temporarily disabled.
+                    if (collider != null && collider.gameObject.activeInHierarchy && !m_ProbeColliders.Contains(collider))
                         m_ProbeColliders.Add(collider);
                 }
             }
-
-            SwipeKeyboardLayout.TryCreate(transform, m_Keys, out m_KeyboardLayout);
-            ConfigureSwipeRecognizer();
         }
 
         public bool TryGetKeyboardLayout(out SwipeKeyboardLayout layout)
@@ -454,6 +492,9 @@ namespace VRTyping.Keyboard
             if (m_SwipeRecognizer == null)
                 m_SwipeRecognizer = gameObject.AddComponent<SwipeTypingRecognizer>();
 
+            if (m_RecognizerConfigured)
+                return;
+
             if (m_KeyboardLayout != null)
                 m_SwipeRecognizer.SetKeyboardLayout(m_KeyboardLayout);
 
@@ -464,6 +505,8 @@ namespace VRTyping.Keyboard
                     StringSplitOptions.RemoveEmptyEntries);
                 m_SwipeRecognizer.SetVocabulary(entries);
             }
+
+            m_RecognizerConfigured = true;
         }
 
         void UpdateTraceForProbe(Collider probeCollider)
@@ -540,6 +583,20 @@ namespace VRTyping.Keyboard
 
             trace.points.Add(point);
             trace.gesturePoints.Add(new GesturePoint(point, Time.time));
+
+            if (trace.points.Count >= Mathf.Max(32, m_MaxTrajectoryPoints))
+                CompactTrajectory(trace);
+        }
+
+        static void CompactTrajectory(SwipeTrace trace)
+        {
+            // Keep the first point, every second interior point and the newest
+            // endpoint. This bounds recognition cost while preserving the path.
+            for (var i = trace.points.Count - 2; i > 0; i -= 2)
+            {
+                trace.points.RemoveAt(i);
+                trace.gesturePoints.RemoveAt(i);
+            }
         }
 
         void TryAcceptTouchedKey(SwipeTrace trace, VRKeyboardKey touchedKey, Collider probeCollider)
@@ -772,13 +829,27 @@ namespace VRTyping.Keyboard
             var bestDistance = float.PositiveInfinity;
             var probePosition = probeCollider.bounds.center;
 
-            for (var i = 0; i < m_Keys.Count; i++)
+            var probeBounds = probeCollider.bounds;
+            var hitCount = Physics.OverlapBoxNonAlloc(
+                probeBounds.center,
+                probeBounds.extents,
+                m_KeyOverlapBuffer,
+                Quaternion.identity,
+                ~0,
+                QueryTriggerInteraction.Collide);
+
+            for (var i = 0; i < hitCount; i++)
             {
-                var key = m_Keys[i];
+                var hitCollider = m_KeyOverlapBuffer[i];
+                if (hitCollider == null || hitCollider == probeCollider)
+                    continue;
+
+                var key = hitCollider.GetComponent<VRKeyboardKey>() ??
+                          hitCollider.GetComponentInParent<VRKeyboardKey>();
                 if (key == null || !key.gameObject.activeInHierarchy)
                     continue;
 
-                var keyCollider = key.GetComponent<Collider>();
+                var keyCollider = key.pressCollider != null ? key.pressCollider : hitCollider;
                 if (keyCollider == null || !keyCollider.enabled)
                     continue;
 

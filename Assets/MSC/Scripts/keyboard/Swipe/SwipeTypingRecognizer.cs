@@ -90,6 +90,7 @@ namespace VRTyping.Keyboard
         [Header("Candidate Generation")]
         public int m_DefaultTopK = 5;
         public int m_MaxCandidateTemplates = 2000;
+        [Min(16)] public int m_MaxFullyScoredCandidates = 96;
         public int m_SoftEndpointLetterCount = 3;
         public float m_StartMismatchPenalty = 0.18f;
         public float m_EndMismatchPenalty = 0.18f;
@@ -109,6 +110,7 @@ namespace VRTyping.Keyboard
         readonly Dictionary<char, List<WordTemplate>> m_ByEnd = new Dictionary<char, List<WordTemplate>>(AlphabetSize);
         readonly Dictionary<int, List<WordTemplate>> m_ByStartEnd = new Dictionary<int, List<WordTemplate>>(AlphabetSize * AlphabetSize);
         readonly List<CandidateSeed> m_CandidateScratch = new List<CandidateSeed>(1024);
+        readonly List<CoarseCandidateSeed> m_CoarseCandidateScratch = new List<CoarseCandidateSeed>(1024);
         readonly HashSet<string> m_CandidateDedup = new HashSet<string>();
 
         bool m_DatabaseDirty = true;
@@ -126,6 +128,7 @@ namespace VRTyping.Keyboard
         {
             m_ResampleCount = Mathf.Max(2, m_ResampleCount);
             m_MaxWords = Mathf.Max(1, m_MaxWords);
+            m_MaxFullyScoredCandidates = Mathf.Max(16, m_MaxFullyScoredCandidates);
             m_DatabaseDirty = true;
         }
 
@@ -238,10 +241,11 @@ namespace VRTyping.Keyboard
             if (seeds.Count == 0)
                 return results;
 
+            BuildCoarseCandidateShortlist(seeds, processed, Mathf.Max(topK, m_MaxFullyScoredCandidates));
             var probabilities = BuildKeyProbabilities(processed.cleaned);
-            for (var i = 0; i < seeds.Count; i++)
+            for (var i = 0; i < m_CoarseCandidateScratch.Count; i++)
             {
-                var seed = seeds[i];
+                var seed = m_CoarseCandidateScratch[i].seed;
                 var template = seed.template;
                 var orderedMatch = ScoreOrderedKeySequenceInternal(processed.cleaned, template.keySequence);
 
@@ -276,6 +280,55 @@ namespace VRTyping.Keyboard
 
             ApplyConfidence(results);
             return results;
+        }
+
+        void BuildCoarseCandidateShortlist(
+            IReadOnlyList<CandidateSeed> seeds,
+            ProcessedTrajectory processed,
+            int capacity)
+        {
+            m_CoarseCandidateScratch.Clear();
+            if (seeds == null || processed == null)
+                return;
+
+            capacity = Mathf.Max(1, capacity);
+            for (var i = 0; i < seeds.Count; i++)
+            {
+                var seed = seeds[i];
+                var template = seed.template;
+                if (template == null)
+                    continue;
+
+                // Cheap, allocation-free approximation. Full ordered-key DP, DTW,
+                // probability and speed scoring only run for the best shortlist.
+                var locationDistance = SwipeTrajectoryUtility.MeanDistance(
+                    processed.resampledLocations,
+                    template.locationPoints);
+                var shapeDistance = SwipeTrajectoryUtility.MeanDistance(
+                    processed.normalizedShape,
+                    template.normalizedShapePoints);
+                var pathPenalty = ScorePathLengthPenalty(processed.pathLength, template.pathLength);
+                var score = locationDistance * 0.45f +
+                            shapeDistance * 0.35f +
+                            seed.endpointPenalty * 0.15f +
+                            pathPenalty * 0.05f -
+                            template.frequencyScore * 0.02f;
+
+                m_CoarseCandidateScratch.Add(new CoarseCandidateSeed(seed, score));
+            }
+
+            m_CoarseCandidateScratch.Sort(CompareCoarseCandidates);
+            if (m_CoarseCandidateScratch.Count > capacity)
+            {
+                m_CoarseCandidateScratch.RemoveRange(
+                    capacity,
+                    m_CoarseCandidateScratch.Count - capacity);
+            }
+        }
+
+        static int CompareCoarseCandidates(CoarseCandidateSeed a, CoarseCandidateSeed b)
+        {
+            return a.score.CompareTo(b.score);
         }
 
         /// <summary>
@@ -1105,6 +1158,18 @@ namespace VRTyping.Keyboard
                 this.startMatched = startMatched;
                 this.endMatched = endMatched;
                 this.endpointPenalty = endpointPenalty;
+            }
+        }
+
+        readonly struct CoarseCandidateSeed
+        {
+            public readonly CandidateSeed seed;
+            public readonly float score;
+
+            public CoarseCandidateSeed(CandidateSeed seed, float score)
+            {
+                this.seed = seed;
+                this.score = score;
             }
         }
 

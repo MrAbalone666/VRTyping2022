@@ -57,6 +57,10 @@ namespace VRTyping.Keyboard
         // 射线没有有效终点时，从射线原点向前放置探针的距离。
         public float m_NoHitDistance = 5f;
 
+        [SerializeField]
+        [Tooltip("Periodically print probe state for diagnostics. Keep disabled during normal VR use.")]
+        bool m_LogProbeStatus;
+
 
         [Range(0f, 1f)]
         [Tooltip("Minimum press input required before the current key is locked for pressing.")]
@@ -328,7 +332,7 @@ namespace VRTyping.Keyboard
             var colliderActive = m_InputMode == VRKeyboardInputMode.Swipe;
             MoveProbe(targetPosition, true, colliderActive);
 
-            if (Time.frameCount % 60 == 0)
+            if (m_LogProbeStatus && Time.frameCount % 60 == 0)
                 Debug.Log($"probe mode={m_InputMode}, endpoint type={endPointType}, pressValue={pressValue:F3}, pressDepth={m_CurrentPressDepth:F4}, pos={transform.position}");
         }
 
