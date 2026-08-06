@@ -14,6 +14,9 @@ namespace VRTyping.Tests
     // 再完成目标句显示、玩家输入对比、错误标红、计时、自动下一句和最终结果统计。
     public class TypingTestSession : MonoBehaviour
     {
+        // 在成绩计算和结果导出完成后触发。参数表示刚完成的试次是否为练习。
+        public event Action<bool> TrialFinished;
+
         [Header("Input")]
         // 玩家最终输入文字的 TMP 输入框。
         // VRKeyboardController / VRKeyboardTextComposer 会把键盘输入写进这个输入框，
@@ -258,8 +261,11 @@ namespace VRTyping.Tests
             // 超时或手动结束时，当前句可能尚未达到目标长度，也需要保存逐句结果。
             RecordCurrentSentenceResult(GetPlayerText(), false);
 
-            // 计算并显示最终结果。
+            // 先计算、导出并显示最终结果，再通知实验流程控制器。
+            // 练习/正式状态必须在回调前保存，因为回调可能立即准备下一轮试次。
+            var wasPractice = IsPracticeMode;
             ShowResults();
+            TrialFinished?.Invoke(wasPractice);
         }
 
         void CacheReferences()

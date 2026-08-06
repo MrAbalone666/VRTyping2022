@@ -1,0 +1,129 @@
+000 [Heading 1] Chapter 3
+Software Requirements and System Design
+001 [Heading 2] 3.1 Introduction
+002 [Normal] This chapter presents the software requirements and system design of the VR text-entry application. It covers the overall architecture, six input methods, swipe-recognition workflow, data logging and experimental design. Chapter 4 presents the implementation.
+003 [Heading 2] 3.2 Software Requirements
+004 [Normal] The application supports the implementation and evaluation of six input methods under consistent conditions. The requirements define system functions, interaction quality and data collection.
+005 [Heading 3] 3.2.1 Functional Requirements
+006 [Normal] The system must provide a virtual QWERTY keyboard and support six methods: controller ray selection with trigger confirmation, controller ray selection with dwell confirmation, direct controller tapping, controller-based swipe typing, two-index-finger hand-tracked typing and ten-finger hand-tracked typing. It must display the target phrase and current transcription and support character entry, spaces, deletion and submission.
+007 [Normal] Each method must provide appropriate feedback. Ray methods must show the targeted key and ray endpoint. Dwell selection must show activation progress. Controller tapping and hand-tracked typing must show contact feedback and prevent repeated activation from a single contact. Swipe typing must record the controller trajectory, rank word candidates and support candidate selection and correction. The system must also provide practice and formal testing stages and allow the researcher to select the participant code and active condition before each session.
+008 [Heading 3] 3.2.2 Non-Functional Requirements
+009 [Normal] The application must remain stable and responsive, with minimal perceptible delay between input and visual feedback. The keyboard layout, dimensions, position, target-phrase display and visual design must remain consistent across conditions. This control limits interface-related variation.
+010 [Normal] The interface must remain readable in the headset and minimise accidental or repeated activation. The application must support the selected headset, controllers and hand tracking. Data must be recorded accurately and linked to the correct participant code, method and phrase.
+011 [Heading 3] 3.2.3 Data Collection Requirements
+012 [Normal] The system must collect data on entry speed, accuracy, correction behaviour, movement and swipe recognition. Each phrase-level record contains the participant code, input method, target phrase, transcribed phrase, start time, end time and duration. Event logs record key activations, deletions, corrections, total input actions and movement data where applicable.
+013 [Normal] For swipe typing, the system must record the predicted candidates, selected candidate, repeated gestures and whether the intended word appears in the Top-1 or Top-5 results. Data are exported in CSV format for analysis. Questionnaire responses use the same participant code to link subjective and objective measures.
+014 [Heading 2] 3.3 System Design
+015 [Normal] The system uses a modular architecture. All methods share the virtual keyboard, text manager, experiment manager and data logger. Method-specific components handle input and feedback. This structure supports consistent evaluation and separate implementation.
+016 [Heading 3] 3.3.1 Overall System Architecture
+017 [Normal] The system contains five components: the VR input layer, text-entry method controller, virtual keyboard and text manager, experiment manager and data logger. The VR input layer receives controller or hand-tracking data. The active method interprets the input and sends a character or recognised word to the shared text manager.
+018 [Normal] The experiment manager controls the participant code, active condition, phrase sequence, practice stage and formal testing stage. The data logger stores interaction events and performance records.
+019 [Normal] Figure 3.1. Overall system architecture and data flow.
+020 [Heading 3] 3.3.2 Common Virtual Keyboard and User Interface Design
+021 [Normal] All methods use the same virtual QWERTY keyboard with alphabetic keys, a space key, a backspace key and a submission control. The interface displays the target phrase, current transcription and active method.
+022 [Normal] Keyboard size, position, target-text presentation and visual design remain constant across conditions. This limits interface variation between methods.
+023 [Normal] Shared feedback indicates targeting and activation. Method-specific feedback includes dwell progress, swipe trajectories, candidate words, ray-endpoint markers and fingertip contact indicators.
+024 [Heading 3] 3.3.3 Text-Entry Method Design
+025 [Normal] All methods use the shared keyboard and text manager. Character-level methods send one character after each confirmed activation. Swipe typing sends a recognised word after gesture completion.
+026 [Heading 4] 3.3.3.1 Trigger-Based Ray Selection
+027 [Normal] A ray extends from the controller to the keyboard. The intersected key is highlighted, and a small sphere marks the ray-keyboard intersection. The participant presses the trigger to activate the target.
+028 [Normal] This method provides explicit confirmation for each key and represents remote point-and-select interaction.
+029 [Heading 4] 3.3.3.2 Dwell-Based Ray Selection
+030 [Normal] The dwell condition uses the same controller ray, key highlighting and endpoint sphere. A key activates after the ray remains on it for a predefined duration.
+031 [Normal] A progress indicator shows the dwell state and resets when the ray leaves the key. This design supports comparison of trigger and dwell confirmation under the same pointing method.
+032 [Heading 4] 3.3.3.3 Direct Controller Tapping
+033 [Normal] Each controller displays an adjustable virtual rod with a small spherical contact point at its tip. The participant moves either rod to the keyboard and taps a key with the sphere. Controller input adjusts the rod length to support a comfortable reach.
+034 [Normal] Contact feedback confirms activation. A contact-state check prevents repeated input until the sphere leaves the key. This method represents direct controller interaction.
+035 [Heading 4] 3.3.3.4 Controller-Based Swipe Typing
+036 [Normal] Controller-based swipe typing enters a word through one continuous trajectory. The participant holds the trigger, moves across the approximate letter positions and releases the trigger to end the gesture.
+037 [Normal] The recogniser ranks candidate words from the recorded trajectory. The interface displays the Top-1 prediction and alternatives. The participant can accept the default, select another candidate or delete the result and repeat the gesture.
+038 [Heading 4] 3.3.3.5 Two-Index-Finger Hand-Tracked Typing
+039 [Normal] Hand tracking enables only the left and right index fingertips to activate keys. A fingertip-key contact event enters a character.
+040 [Normal] The system tracks contact states and requires fingertip separation before another activation. Other tracked fingertips remain visible but inactive.
+041 [Heading 4] 3.3.3.6 Ten-Finger Hand-Tracked Typing
+042 [Normal] All ten tracked fingertips can activate keys. This condition approximates conventional multi-finger typing on a virtual keyboard.
+043 [Normal] The condition uses the same keyboard and contact rules as two-index-finger typing. This design supports comparison of two-index and ten-finger input under shared keyboard and contact rules.
+044 [Heading 3] 3.3.4 Swipe Recognition Design
+045 [Normal] The recogniser converts a continuous controller trajectory into ranked word candidates through three stages: trajectory capture and processing, candidate generation and ranking, and user correction.
+046 [Heading 4] 3.3.4.1 Trajectory Capture and Processing
+047 [Normal] Controller positions are sampled while the trigger is held and transformed from world coordinates to keyboard-relative coordinates.
+048 [Normal] Processing removes near-duplicate points, smooths the path and resamples it to a fixed-length representation. The processed trajectory can then be compared with candidate word paths.
+049 [Heading 4] 3.3.4.2 Candidate Generation and Ranking
+050 [Normal] Candidates are drawn from an English vocabulary. Approximate starting and ending key positions restrict the search space.
+051 [Normal] The ranking score combines trajectory similarity, proximity to expected key positions and word frequency. The highest-ranked candidate is the Top-1 prediction, and the five highest-ranked candidates form the Top-5 list.
+052 [Heading 4] 3.3.4.3 Candidate Selection and Correction
+053 [Normal] The interface presents the Top-1 prediction as the default result and displays alternative candidates. The participant can accept the default or select another word.
+054 [Normal] When the intended word is absent, the participant can delete the result and repeat the gesture. The system records candidate selections, repeated gestures and correction actions.
+055 [Heading 3] 3.3.5 Experiment Management Design
+056 [Normal] The experiment manager stores the participant code, active method, current phrase and experimental stage.
+057 [Normal] Each condition begins with two practice phrases followed by a 120-second formal test. Practice data are excluded from the main analysis. The manager controls phrase presentation, timing, task completion and transitions between conditions.
+058 [Normal] The six conditions follow the counterbalanced orders described in Section 3.4.7.
+059 [Heading 3] 3.3.6 Data Logging Design
+060 [Normal] The data logger creates a phrase-level record at each submission and a condition-level summary when the formal test ends. Records contain the participant code, method, target phrase, transcription, timing information and calculated measures.
+061 [Normal] Event logs record key activations, deletions, candidate selections and repeated gestures. Swipe trajectories and movement data are stored separately and linked to the corresponding phrase and condition records.
+062 [Normal] Data are exported in CSV format. Pseudonymous participant codes link performance records with questionnaire responses. Participant names are not stored in the research dataset.
+063 [Heading 2] 3.4 Experimental Design
+064 [Normal] The study uses a within-subjects design in which every participant completes all six conditions. This design supports paired comparisons and controls stable individual differences in typing ability, QWERTY familiarity and VR experience.
+065 [Heading 3] 3.4.1 Research Questions
+066 [Normal] The study examines the following questions:
+067 [Normal] • How do the six VR text-entry methods differ in entry speed?
+068 [Normal] • How do the methods differ in accuracy and correction behaviour?
+069 [Normal] • How do the methods differ in workload, physical fatigue and perceived usability?
+070 [Normal] • Which methods do participants prefer, and which advantages or limitations shape these preferences?
+071 [Normal] Planned contrasts compare trigger and dwell confirmation, ray selection and direct controller tapping, and two-index-finger and ten-finger hand-tracked typing.
+072 [Heading 3] 3.4.2 Variables
+073 [Normal] The independent variable is text-entry method, with six levels corresponding to the experimental conditions.
+074 [Normal] The dependent variables are entry speed, character error rate, correction actions, backspace count, workload, physical fatigue, usability and participant preference. Swipe-specific measures include Top-1 accuracy, Top-5 accuracy, candidate selections and repeated gestures. Movement distance is recorded as an exploratory measure.
+075 [Normal] Controlled variables include the VR hardware, virtual environment, keyboard layout, keyboard dimensions and position, target-phrase display, task instructions, practice duration, formal-test duration, phrase allocation and performance calculations. Method-specific feedback is provided only when required by the interaction technique.
+076 [Heading 3] 3.4.3 Participants
+077 [Normal] The target sample is 24 valid participants, with four assigned to each of six counterbalanced condition orders. Up to 28 participants may be recruited to account for withdrawal, VR discomfort, tracking failure or incomplete data.
+078 [Normal] Participants must be at least 18 years old, able to read English phrases and familiar with the QWERTY layout. Normal or corrected-to-normal vision is required. Previous VR experience is not required. VR use and typing experience are recorded as demographic variables.
+079 [Normal] Participation is voluntary, and participants may withdraw at any time. Incomplete sessions and trials affected by major technical failures are excluded according to predefined criteria.
+080 [Heading 3] 3.4.4 Experimental Conditions
+081 [Normal] Each participant completes six conditions:
+082 [Normal] 1. Controller ray selection with trigger confirmation
+083 [Normal] 2. Controller ray selection with dwell confirmation
+084 [Normal] 3. Direct controller tapping
+085 [Normal] 4. Controller-based swipe typing
+086 [Normal] 5. Two-index-finger hand-tracked typing
+087 [Normal] 6. Ten-finger hand-tracked typing
+088 [Normal] All conditions use the same headset, virtual environment, QWERTY layout, target-phrase interface and visual design. Only the input mechanism and necessary method-specific feedback vary.
+089 [Heading 3] 3.4.5 Phrase Sets and Tasks
+090 [Normal] Participants reproduce short English phrases displayed in VR. Phrases are drawn from the MacKenzie and Soukoreff (2003) phrase set. Phrase groups are matched across conditions by character count and word count.
+091 [Normal] Each condition starts with two practice phrases. The formal test then lasts 120 seconds. The system presents a new phrase after each submission until the test ends. Practice phrases are excluded from the main analysis, and formal phrases are not repeated for the same participant.
+092 [Normal] Phrase order is randomised within each condition, and equivalent phrase groups are assigned across methods. Pilot testing checks phrase allocation, task duration and rest intervals.
+093 [Heading 3] 3.4.6 Experimental Procedure
+094 [Normal] Participants read the study information, provide informed consent and complete a demographic questionnaire. The researcher then introduces the VR equipment, keyboard, correction controls and safety procedure.
+095 [Normal] Before each condition, the participant receives method instructions and enters two practice phrases. The participant then completes the 120-second formal test while the system records performance and interaction data. After the test, the participant completes workload, fatigue and usability measures and takes a short rest.
+096 [Normal] This sequence is repeated for all six conditions. At the end of the session, participants rank the methods and provide short qualitative comments.
+097 [Heading 3] 3.4.7 Counterbalancing and Learning Control
+098 [Normal] The study uses six balanced Latin-square orders. With 24 valid participants, four participants receive each order. Assignment occurs before data collection.
+099 [Normal] Every condition provides the same number of practice phrases and the same formal-test duration. Practice data are excluded, equivalent phrase groups rotate across methods and rest periods limit fatigue.
+100 [Heading 3] 3.4.8 Evaluation Measures
+101 [Normal] Entry speed is reported in words per minute (WPM), using the conventional definition of five characters per word (MacKenzie and Soukoreff, 2002). Phrase-level WPM is calculated as:
+102 [Normal] WPM = ((N - 1) / t) × (60 / 5)
+103 [Normal] where N is the number of characters in the transcribed phrase and t is the time in seconds from the first input action to submission.
+104 [Normal] Character error rate (CER) uses Levenshtein distance between the target string S and transcribed string P (Soukoreff and MacKenzie, 2001):
+105 [Normal] CER = (LD(S, P) / |S|) × 100
+106 [Normal] where LD(S, P) is the minimum number of insertions, deletions and substitutions required to transform P into S.
+107 [Normal] Correction behaviour is described using backspace count, correction actions and total input actions. The project defines correction-action rate as:
+108 [Normal] Correction-action rate = (C / A) × 100
+109 [Normal] where C is the number of correction actions and A is the total number of input actions.
+110 [Normal] For controller-based swipe typing, Top-1 accuracy is the percentage of gestures that rank the intended word first. Top-5 accuracy is the percentage that include the intended word among the five highest-ranked candidates. Candidate selections and repeated gestures measure correction effort.
+111 [Normal] Subjective workload is measured after each condition using NASA-TLX (Hart and Staveland, 1988). Physical fatigue is recorded using the same seven-point scale for every method. A consistent post-condition questionnaire assesses usability. Participants also provide a final preference ranking and qualitative comments.
+112 [Normal] Repeated-measures tests compare the six methods. The analysis uses parametric or non-parametric procedures according to their assumptions, followed by corrected pairwise comparisons. Descriptive statistics and effect sizes accompany significance tests.
+113 [Heading 2] 3.5 Ethical and Data Management Considerations
+114 [Normal] Ethical approval must be obtained before recruitment. Participants receive study information, provide informed consent and may withdraw without giving a reason. They are informed about possible VR discomfort, fatigue and cybersickness. The experiment can be paused or stopped, and rest periods are provided between conditions.
+115 [Normal] Research datasets use pseudonymous participant codes. Only required demographic information, performance records and questionnaire responses are collected. Data are stored securely, accessed only by the research team and managed under the approved University of Leeds ethics and data-management procedures.
+116 [Heading 2] 3.6 Chapter Summary
+117 [Normal] This chapter defined the software requirements and system design for the VR text-entry application. It presented the shared interface, six input methods, swipe recogniser, experiment manager, data logger and experimental design. Chapter 4 describes their implementation.
+--- TABLE 0 (Normal Table) ---
+VR Input Layer
+↓
+Text-Entry Method Controller
+↓
+Virtual Keyboard and Text Manager
+↓
+Experiment Manager
+↓
+Data Logger

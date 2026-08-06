@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System;
 using TMPro;
 using UnityEditor;
@@ -224,3 +225,4 @@ namespace VRTyping.Keyboard.Editor
         }
     }
 }
+#endif

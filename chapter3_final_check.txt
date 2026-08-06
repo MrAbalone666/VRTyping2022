@@ -1,0 +1,129 @@
+000 [Heading 1] Chapter 3
+Software Requirements and System Design
+001 [Heading 2] 3.1 Introduction
+002 [Normal] This chapter presents the software requirements and system design of the implemented VR text-entry application. It covers the Unity/OpenXR architecture, six input modes, swipe-recognition workflow, trial control, CSV export and the proposed experimental protocol. Statements about the software are based on the current project configuration; procedures performed outside the Unity application are identified explicitly.
+003 [Heading 2] 3.2 Software Requirements
+004 [Normal] The application supports the implementation and evaluation of six input methods under consistent conditions. The requirements define system functions, interaction quality and data collection.
+005 [Heading 3] 3.2.1 Functional Requirements
+006 [Normal] The system must provide a virtual QWERTY keyboard and support six methods: controller ray selection with trigger confirmation, controller ray selection with dwell confirmation, direct controller tapping, controller-based swipe typing, two-index-finger hand-tracked typing and ten-finger hand-tracked typing. It must display the target phrase and current transcription and support character entry, spaces, deletion and submission.
+007 [Normal] Each method must provide appropriate feedback. Ray methods show the targeted key and ray endpoint. Dwell selection visualises activation progress through the key highlight and press state. Controller tapping and hand-tracked typing use probe contact and key press/release thresholds to prevent repeated activation during one continuous press. Swipe typing captures an in-memory controller trajectory, ranks word candidates and supports candidate selection or cancellation. The application also provides separate practice and formal phrase arrays, a participant-ID field, a practice toggle and a six-option input-mode selector.
+008 [Heading 3] 3.2.2 Non-Functional Requirements
+009 [Normal] The application must remain stable and responsive, with minimal perceptible delay between input and visual feedback. All conditions use the same keyboard prefab, target-phrase display and test scene; the mode selector changes the active input components rather than loading separate interfaces. Because the project also includes a runtime keyboard-position adjuster, identical position across conditions must be maintained by the experimental procedure or restored to a common pose before each condition.
+010 [Normal] The interface must remain readable in the headset and minimise accidental or repeated activation. The current project uses Unity 2022.3.13f1c1 with OpenXR, XR Interaction Toolkit and XR Hands, and includes Oculus/OpenXR loader settings. Data must be associated with the participant ID, selected input mode and sentence presented by the current trial.
+011 [Heading 3] 3.2.3 Data Collection Requirements
+012 [Normal] The implemented logger stores trial-level and sentence-level summaries rather than a complete event stream. Sentence records contain the participant ID, input method, practice flag, sentence index, target text, final input text, duration, character counts, Levenshtein distance, CER, accuracy, total physical actions, committed characters, Backspace, Shift and CapsLock counts, modifier count and completion status. Trial records additionally contain schema, session and trial identifiers, start and end timestamps, total duration, gross and effective WPM, validity information and sentence count.
+013 [Normal] CSV export produces trial_results.csv and sentence_results.csv. The current schema does not export raw controller or hand trajectories, movement distance, candidate rankings, separately labelled candidate-selection counts, repeated-gesture counts, or Top-1/Top-5 correctness. Swipe gestures and controller-based candidate confirmations contribute to the aggregate PhysicalActionCount; Backspace, Shift and CapsLock also have separate counters. Questionnaire responses are not collected by the Unity application and must be linked externally using the participant ID.
+014 [Heading 2] 3.3 System Design
+015 [Normal] The implementation is modular, but its responsibilities are distributed across several Unity components. VRKeyboardInputModeSelector activates the selected interaction technique; VRKeyboardKey, VRKeyboardController, VRKeyboardSwipeInput and VRKeyboardTextComposer handle key or word entry; TypingTestSession controls phrase presentation and timing; and ResultOutput aggregates and exports results.
+016 [Heading 3] 3.3.1 Overall System Architecture
+017 [Normal] Controller and hand data enter through Unity's OpenXR/XR Interaction components. VRKeyboardInputModeSelector exposes six modes (Press, Swipe, StickTap, Dwell, HandTouch and HandTouch10) and enables the appropriate ray, stick, swipe or hand-probe components. These components interact with the shared VRKeyboardKey objects and write text to a common TMP_InputField through VRKeyboardController or VRKeyboardTextComposer.
+018 [Normal] TypingTestSession listens to the shared text field and keyboard telemetry, displays the current target and colour-coded transcription, advances through the active phrase array and controls the countdown. ResultOutput reads the participant ID and selected mode, aggregates sentence and trial statistics, and appends them to two CSV files. Condition ordering and questionnaire administration are not managed by these components.
+019 [Normal] Figure 3.1. Overall system architecture and data flow.
+020 [Heading 3] 3.3.2 Common Virtual Keyboard and User Interface Design
+021 [Normal] All methods use the same virtual QWERTY keyboard prefab, including alphabetic keys, Space, Backspace and Enter controls. The interface displays the target phrase, the current transcription, the remaining time, the selected input method in a dropdown, the participant ID and the practice/formal state.
+022 [Normal] Keyboard geometry and visual design are shared because every condition uses the same scene object. Position can nevertheless be changed at runtime by VRKeyboardPositionAdjuster, so a fixed or reset position is an experimental control rather than a software-enforced invariant.
+023 [Normal] Shared key highlighting and press animation indicate targeting and activation. Method-specific feedback includes dwell progress on the key, the ray-endpoint probe, controller-stick probes, hand fingertip probes, the swipe letter preview and a ranked candidate list.
+024 [Heading 3] 3.3.3 Text-Entry Method Design
+025 [Normal] All methods share the keyboard and TMP_InputField. Discrete modes call the common key-handling path after a confirmed activation. Swipe mode records one continuous gesture, obtains ranked candidates from SwipeTypingRecognizer and commits the selected word to the same text field.
+026 [Heading 4] 3.3.3.1 Trigger-Based Ray Selection
+027 [Normal] A ray extends from the controller to the keyboard. The intersected key is highlighted, and a small sphere marks the ray-keyboard intersection. The participant presses the trigger to activate the target.
+028 [Normal] This method provides explicit confirmation for each key and represents remote point-and-select interaction.
+029 [Heading 4] 3.3.3.2 Dwell-Based Ray Selection
+030 [Normal] The dwell condition uses the same controller ray, key highlighting and endpoint probe. A key activates after the ray remains on it for the configured dwell duration, which is 0.6 seconds in the current component defaults.
+031 [Normal] The elapsed dwell time is normalised from 0 to 1 and drives both the highlight and external press state. Progress resets when the ray leaves the key or moves to another key; after activation, the key remains fully highlighted until the target changes.
+032 [Heading 4] 3.3.3.3 Direct Controller Tapping
+033 [Normal] Each controller can drive a virtual stick with a spherical probe at its tip. The participant moves the probe to the keyboard and taps a key. The stick length is adjustable with the controller thumbstick within configured minimum and maximum limits.
+034 [Normal] Probe contact drives the same VRKeyboardKey press mechanism used by other discrete modes. Separate press and release thresholds prevent a continuously overlapping probe from producing repeated activations before the key is released.
+035 [Heading 4] 3.3.3.4 Controller-Based Swipe Typing
+036 [Normal] Controller-based swipe typing enters a word through one continuous trajectory. In the current scene, the trigger must be held while the ray probe moves across the keyboard and releasing it finalises the gesture.
+037 [Normal] After recognition, the current scene displays up to five ranked candidates and initially highlights the Top-1 result. The participant moves through the list with a controller thumbstick and confirms with a trigger; numbered keys, Space or Enter can also select a candidate, while Back or Escape cancels the pending list. The scene is configured not to append a space automatically after the selected word.
+038 [Heading 4] 3.3.3.5 Two-Index-Finger Hand-Tracked Typing
+039 [Normal] Hand tracking enables only the left and right index fingertips to activate keys. A fingertip-key contact event enters a character.
+040 [Normal] The system tracks contact states and requires fingertip separation before another activation. Other tracked fingertips remain visible but inactive.
+041 [Heading 4] 3.3.3.6 Ten-Finger Hand-Tracked Typing
+042 [Normal] All ten tracked fingertips can activate keys. This condition approximates conventional multi-finger typing on a virtual keyboard.
+043 [Normal] The condition uses the same keyboard and contact rules as two-index-finger typing. This design supports comparison of two-index and ten-finger input under shared keyboard and contact rules.
+044 [Heading 3] 3.3.4 Swipe Recognition Design
+045 [Normal] SwipeTypingRecognizer converts a continuous controller trajectory into ranked word candidates through trajectory preprocessing, endpoint-based candidate generation, multi-component scoring and candidate presentation.
+046 [Heading 4] 3.3.4.1 Trajectory Capture and Processing
+047 [Normal] While the trigger is held, probe positions are projected from world space onto the two-dimensional keyboard plane. Nearby trajectory samples are discarded, and at most 256 points are retained by the input component before recognition.
+048 [Normal] Preprocessing removes near-duplicate points, applies a moving average, removes isolated spatial outliers, resamples the trajectory to 64 points and normalises its scale and translation. The processed location and shape representations are then compared with word templates generated from the keyboard layout.
+049 [Heading 4] 3.3.4.2 Candidate Generation and Ranking
+050 [Normal] Candidates are generated from an English word-list asset with a configured maximum of 20,000 words. The recogniser uses the three nearest letters to the gesture start and end to obtain a candidate pool, then applies a coarse shortlist before full scoring.
+051 [Normal] The final score combines ordered-key distance, key-position probability, dynamic time warping, start and end distances, direction similarity and path-length penalty, with bonuses for word frequency and key-level speed behaviour. Lower final scores rank more highly; the best five candidates form the list shown by the current scene.
+052 [Heading 4] 3.3.4.3 Candidate Selection and Correction
+053 [Normal] The interface presents the ranked candidate list with the first item selected. A controller thumbstick changes the selected index and a trigger confirms it; numbered keys and Space/Enter provide alternative confirmation paths, and Back/Escape cancels the pending list.
+054 [Normal] Candidate confirmation through the controller is counted as a generic physical action, and each completed gesture is counted as a Swipe action. The current CSV schema does not preserve candidate ranks, the selected rank, raw trajectories or repeated-gesture relationships, so Top-1/Top-5 recognition accuracy cannot be reconstructed from the exported files.
+055 [Heading 3] 3.3.5 Experiment Management Design
+056 [Normal] The current project does not use one monolithic experiment manager. TypingTestSession owns the active practice or formal phrase array, current sentence, countdown and sentence transitions. VRKeyboardInputModeSelector owns the active input mode, while ResultOutput owns participant ID, trial metadata, validity flags, counters and CSV export.
+057 [Normal] The configured scene contains two practice sentences and eight formal sentence entries and uses a 120-second countdown. Timing begins on the first physical input action. When the typed text reaches the target length, the session records the sentence, clears the input field and advances sequentially; the trial ends when time expires or when no later configured sentence remains. Practice records are exported with IsPractice=true and must be excluded during analysis rather than being discarded by the application.
+058 [Normal] The application does not generate counterbalanced condition orders or automatically transition between input modes. Before each trial, the researcher must select the required mode in the dropdown, choose practice or formal state, verify the participant ID and reset the test in accordance with an external condition schedule.
+059 [Heading 3] 3.3.6 Data Logging Design
+060 [Normal] ResultOutput creates one trial-level row when any practice or formal trial ends and one sentence-level row for each recorded sentence. Trial rows contain timestamps, participant ID, method, practice flag, timing, performance metrics, action totals, validity fields and sentence count; sentence rows contain the corresponding sentence text, timing, error metrics and action totals.
+061 [Normal] The logger stores aggregated counters rather than timestamped key-event records. PhysicalActionCount includes discrete key actions, Swipe actions and controller candidate confirmations. Backspace, Shift and CapsLock have separate fields, but ordinary keys, candidate selections and repeated gestures are not exported as separately typed events. Raw swipe trajectories and hand/controller movement paths remain in memory only for interaction processing.
+062 [Normal] On desktop and in the Unity Editor, the scene is configured to append UTF-8 CSV rows to the custom ExperimentResults directory; otherwise the code falls back to Application.persistentDataPath/VRTypingResults. The participant ID is formatted as a pseudonymous code such as P001. No participant name or questionnaire response is stored by this application.
+063 [Heading 2] 3.4 Experimental Design
+064 [Normal] The study uses a within-subjects design in which every participant completes all six conditions. This design supports paired comparisons and controls stable individual differences in typing ability, QWERTY familiarity and VR experience.
+065 [Heading 3] 3.4.1 Research Questions
+066 [Normal] The study examines the following questions:
+067 [Normal] • How do the six VR text-entry methods differ in entry speed?
+068 [Normal] • How do the methods differ in accuracy and correction behaviour?
+069 [Normal] • How do the methods differ in workload, physical fatigue and perceived usability?
+070 [Normal] • Which methods do participants prefer, and which advantages or limitations shape these preferences?
+071 [Normal] Planned contrasts compare trigger and dwell confirmation, ray selection and direct controller tapping, and two-index-finger and ten-finger hand-tracked typing.
+072 [Heading 3] 3.4.2 Variables
+073 [Normal] The independent variable is text-entry method, with six levels corresponding to the experimental conditions.
+074 [Normal] Software-derived dependent measures currently available from the CSV files are trial duration, gross WPM, effective WPM, Levenshtein distance, CER, accuracy, sentence count, total physical actions, committed characters, Backspace count and modifier counts. Workload, fatigue, usability and preference must be collected separately. Top-1/Top-5 swipe accuracy, selected candidate rank, repeated gestures and movement distance are not available from the present export schema.
+075 [Normal] The same Unity scene, keyboard prefab, target display, phrase arrays and performance calculations are shared across modes. Hardware, instructions and test duration must be held constant operationally. Because the software allows keyboard-position adjustment and manual mode selection, the researcher must standardise the keyboard pose and follow the external condition schedule for every participant.
+076 [Heading 3] 3.4.3 Participants
+077 [Normal] The target sample is 24 valid participants, with four assigned to each of six counterbalanced condition orders. Up to 28 participants may be recruited to account for withdrawal, VR discomfort, tracking failure or incomplete data.
+078 [Normal] Participants must be at least 18 years old, able to read English phrases and familiar with the QWERTY layout. Normal or corrected-to-normal vision is required. Previous VR experience is not required. VR use and typing experience are recorded as demographic variables.
+079 [Normal] Participation is voluntary, and participants may withdraw at any time. Incomplete sessions and trials affected by major technical failures are excluded according to predefined criteria.
+080 [Heading 3] 3.4.4 Experimental Conditions
+081 [Normal] Each participant completes six conditions:
+082 [Normal] 1. Controller ray selection with trigger confirmation
+083 [Normal] 2. Controller ray selection with dwell confirmation
+084 [Normal] 3. Direct controller tapping
+085 [Normal] 4. Controller-based swipe typing
+086 [Normal] 5. Two-index-finger hand-tracked typing
+087 [Normal] 6. Ten-finger hand-tracked typing
+088 [Normal] All conditions use the same headset setup, Unity scene, keyboard prefab, target-phrase interface and visual design. Only the active input components and required method-specific feedback change. The researcher must keep the adjustable keyboard pose consistent between conditions.
+089 [Heading 3] 3.4.5 Phrase Sets and Tasks
+090 [Normal] Participants reproduce English sentences stored directly in the TypingTestSession component of TypingScene. The current project does not load the MacKenzie and Soukoreff phrase set, does not construct character- or word-count-matched groups, and does not randomise the phrase array at runtime.
+091 [Normal] The configured scene provides two practice sentences and a 120-second formal test. Within either array, sentences are presented in their serialized order and the next sentence appears when the typed text reaches the current target length. Practice and formal trials are both exported and distinguished by the IsPractice field. The formal array currently contains eight entries, including one duplicated sentence, so non-repetition is not guaranteed by the software.
+092 [Normal] If randomisation, matched phrase groups or non-repetition are required by the study protocol, the phrase arrays must be prepared before data collection or the software must be extended. The present implementation does not perform these controls automatically.
+093 [Heading 3] 3.4.6 Experimental Procedure
+094 [Normal] Participants read the study information, provide informed consent and complete a demographic questionnaire. The researcher then introduces the VR equipment, keyboard, correction controls and safety procedure.
+095 [Normal] Before each condition, the participant receives method instructions and completes the two configured practice sentences. The researcher then switches the practice toggle off, verifies the selected method and starts the 120-second formal test. The application records the implemented performance summaries and action counters; workload, fatigue and usability questionnaires are administered outside the application before the rest period.
+096 [Normal] This sequence is repeated for all six conditions. At the end of the session, participants rank the methods and provide short qualitative comments.
+097 [Heading 3] 3.4.7 Counterbalancing and Learning Control
+098 [Normal] The proposed study may use six balanced Latin-square orders; with 24 valid participants, four participants can be assigned to each order. This assignment is an external experimental procedure: the Unity application neither generates the Latin square nor checks that the researcher follows it.
+099 [Normal] Every condition can use the same two practice entries and the same 120-second duration. Practice trials remain in the CSV and must be removed with the IsPractice field during analysis. Phrase-group rotation and rest periods are not enforced by the software and must be administered by the researcher.
+100 [Heading 3] 3.4.8 Evaluation Measures
+101 [Normal] The application reports gross words per minute (Gross WPM) using five characters per word. It calculates one trial-level value from the cumulative final-transcription character count C and elapsed trial time t in seconds:
+102 [Normal] Gross WPM = (C / 5) / (t / 60) = 12C / t
+103 [Normal] where C is the sum of the final text lengths used for the trial result, including spaces and punctuation but excluding characters that were entered and later deleted; those are reflected separately in CommittedCharacterCount. Timing begins on the first physical input action. The implementation does not subtract one character or export sentence-level WPM. Effective WPM is calculated as Gross WPM × max(0, 1 − CER).
+104 [Normal] The exported character error rate (CER) is a proportion from Levenshtein distance between the target string S and transcribed string P:
+105 [Normal] CER = LD(S, P) / |S|
+106 [Normal] where LD(S, P) is the minimum number of insertions, deletions and substitutions required to transform P into S. For a sentence interrupted by timeout, the implementation compares P only with the equally long attempted prefix of S; completed sentences use the full target.
+107 [Normal] Correction behaviour is represented by exported BackspaceActionCount, PhysicalActionCount and CommittedCharacterCount values at sentence and trial levels. Shift and CapsLock are also counted separately. The application does not calculate a correction-action rate or export candidate selection as an independent counter.
+108 [Normal] An offline backspace-action rate may be derived as (B / A) × 100,
+109 [Normal] where B is BackspaceActionCount and A is PhysicalActionCount. This is a post-processing measure, not a value calculated or written by the Unity project, and A also includes Swipe and controller candidate-confirmation actions.
+110 [Normal] The recogniser returns a ranked candidate list internally, but the exported CSV files do not contain the intended word, candidate list or selected rank. Consequently, Top-1 and Top-5 accuracy cannot be computed from the current dataset without extending the logging schema before the experiment.
+111 [Normal] Subjective workload may be measured after each condition using NASA-TLX (Hart and Staveland, 1988), with fatigue and usability assessed using a consistent external questionnaire. These measures, final preference rankings and qualitative comments are study instruments and are not implemented in the Unity application.
+112 [Normal] Repeated-measures tests compare the six methods. The analysis uses parametric or non-parametric procedures according to their assumptions, followed by corrected pairwise comparisons. Descriptive statistics and effect sizes accompany significance tests.
+113 [Heading 2] 3.5 Ethical and Data Management Considerations
+114 [Normal] Ethical approval must be obtained before recruitment. Participants receive study information, provide informed consent and may withdraw without giving a reason. They are informed about possible VR discomfort, fatigue and cybersickness. The software provides reset and finish controls but no dedicated consent or pause workflow; stopping, rest periods and safety monitoring are therefore handled by the researcher.
+115 [Normal] The application stores a pseudonymous participant ID rather than a participant name and writes local CSV files containing performance and interaction summaries. Demographic and questionnaire data are outside the project. Secure storage, access control, retention and withdrawal procedures must therefore be applied to the exported files and external records under the approved University of Leeds ethics and data-management procedures.
+116 [Heading 2] 3.6 Chapter Summary
+117 [Normal] This chapter defined the requirements and verified design of the implemented VR text-entry application. It described the shared keyboard, six selectable input modes, swipe recogniser, distributed trial-management components and two-level CSV export. It also distinguished implemented measures from external experimental procedures and identified current logging and phrase-allocation limitations that must be addressed operationally or through future development.
+--- TABLE 0 (Normal Table) ---
+OpenXR controller and hand-tracking data
+↓
+VRKeyboardInputModeSelector
+↓
+Mode-specific ray, dwell, stick, swipe or hand-probe component
+↓
+VRKeyboardKey / VRKeyboardTextComposer → TMP_InputField
+↓
+TypingTestSession → ResultOutput → CSV files

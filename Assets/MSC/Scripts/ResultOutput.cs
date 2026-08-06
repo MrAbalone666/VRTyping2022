@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using TMPro;
 using UnityEngine;
 using VRTyping.Keyboard;
 
@@ -35,6 +36,9 @@ namespace VRTyping.Tests
         [Header("Participant")]
         // 参与者编号，例如 P001。
         public string m_ParticipantId = "P001";
+
+        // ParticipantTXT/ID 下用于显示和编辑参与者编号的输入框。
+        public TMP_InputField m_ParticipantIdInputField;
 
         // 当前试次是否为练习试次。
         public bool m_IsPractice;
@@ -238,10 +242,12 @@ namespace VRTyping.Tests
         {
             get
             {
+#if !UNITY_ANDROID || UNITY_EDITOR
                 if (m_UseCustomExportPath && !string.IsNullOrWhiteSpace(m_CustomExportPath))//使用自定义路径
                 {
                     return m_CustomExportPath;
                 }
+#endif
 
                 return Path.Combine(Application.persistentDataPath,m_ExportFolderName);
             }
@@ -251,17 +257,22 @@ namespace VRTyping.Tests
         void Awake()
         {
             CacheReferences();
+            RefreshParticipantIdFromResults();
         }
 
         // 组件启用时开始监听键盘层发布的物理输入动作。
         void OnEnable()
         {
+            if (m_ParticipantIdInputField != null)
+                m_ParticipantIdInputField.onEndEdit.AddListener(HandleParticipantIdEndEdit);
             VRKeyboardInputTelemetry.PhysicalActionRecorded += HandlePhysicalAction;
         }
 
         // 组件禁用时取消监听，防止重复订阅或对象销毁后仍收到事件。
         void OnDisable()
         {
+            if (m_ParticipantIdInputField != null)
+                m_ParticipantIdInputField.onEndEdit.RemoveListener(HandleParticipantIdEndEdit);
             VRKeyboardInputTelemetry.PhysicalActionRecorded -= HandlePhysicalAction;
         }
 
@@ -270,6 +281,269 @@ namespace VRTyping.Tests
         {
             if (m_InputModeSelector == null)
                 m_InputModeSelector = FindObjectOfType<VRKeyboardInputModeSelector>(true);
+
+            // 场景没有手动挂载时，只接受 ParticipantTXT 子物体中名为 ID 的输入框。
+            if (m_ParticipantIdInputField == null)
+            {
+                var inputFields = FindObjectsOfType<TMP_InputField>(true);
+                for (var i = 0; i < inputFields.Length; i++)
+                {
+                    var inputField = inputFields[i];
+                    if (inputField != null &&
+                        inputField.name == "ID" &&
+                        inputField.transform.parent != null &&
+                        inputField.transform.parent.name == "ParticipantTXT")
+                    {
+                        m_ParticipantIdInputField = inputField;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 从整个 trial_results.csv 中寻找已经完成 HandTouch10 正式测试的最大参与者编号。
+        // CSV 的物理最后一行不参与判断，因此旧参与者后续追加练习或重测不会改变结果。
+        public void RefreshParticipantIdFromResults()
+        {
+            var nextParticipantNumber = 1;
+            var trialPath = Path.Combine(exportDirectory, TrialFileName);
+
+            try
+            {
+                if (File.Exists(trialPath))
+                {
+                    var csvRows = ParseCsv(File.ReadAllText(trialPath, Encoding.UTF8));
+                    nextParticipantNumber = FindNextParticipantNumber(csvRows);
+                }
+            }
+            catch (Exception exception)
+            {
+                // 读取失败时保留当前有效编号；当前编号也无效时才回退到 P001。
+                Debug.LogWarning("Failed to read participant ID from typing results: " + exception, this);
+                if (TryParseParticipantNumber(m_ParticipantId, out var currentNumber))
+                    nextParticipantNumber = currentNumber;
+            }
+
+            SetParticipantId(FormatParticipantId(nextParticipantNumber));
+        }
+
+        // 用户完成编辑时验证并标准化编号。
+        // 7、007、P007 和 p007 都会统一保存成 P007。
+        void HandleParticipantIdEndEdit(string value)
+        {
+            if (TryParseParticipantNumber(value, out var participantNumber))
+            {
+                SetParticipantId(FormatParticipantId(participantNumber));
+                return;
+            }
+
+            Debug.LogWarning("Participant ID must be a positive number such as 7, 007, or P007.", this);
+            SynchronizeParticipantIdInputField();
+        }
+
+        // 在试次结束前再读取一次输入框，避免输入框仍有焦点时 onEndEdit 尚未触发。
+        void SynchronizeParticipantIdFromInputField()
+        {
+            if (m_ParticipantIdInputField == null)
+                return;
+
+            if (TryParseParticipantNumber(m_ParticipantIdInputField.text, out var participantNumber))
+                SetParticipantId(FormatParticipantId(participantNumber));
+            else
+                SynchronizeParticipantIdInputField();
+        }
+
+        void SetParticipantId(string participantId)
+        {
+            m_ParticipantId = participantId;
+            SynchronizeParticipantIdInputField();
+        }
+
+        void SynchronizeParticipantIdInputField()
+        {
+            if (m_ParticipantIdInputField != null && m_ParticipantIdInputField.text != m_ParticipantId)
+                m_ParticipantIdInputField.SetTextWithoutNotify(m_ParticipantId);
+        }
+
+        static string FormatParticipantId(int participantNumber)
+        {
+            return "P" + Mathf.Max(1, participantNumber).ToString("D3", s_InvariantCulture);
+        }
+
+        static bool TryParseParticipantNumber(string participantId, out int participantNumber)
+        {
+            participantNumber = 0;
+            if (string.IsNullOrWhiteSpace(participantId))
+                return false;
+
+            var value = participantId.Trim();
+            if (value.Length > 0 && (value[0] == 'P' || value[0] == 'p'))
+                value = value.Substring(1);
+
+            return int.TryParse(value, NumberStyles.None, s_InvariantCulture, out participantNumber) &&
+                   participantNumber > 0;
+        }
+
+        static int FindNextParticipantNumber(List<string[]> csvRows)
+        {
+            if (csvRows == null || csvRows.Count == 0)
+                return 1;
+
+            var header = csvRows[0];
+            var participantColumn = FindColumnIndex(header, "ParticipantId");
+            var methodColumn = FindColumnIndex(header, "InputMethod");
+            var practiceColumn = FindColumnIndex(header, "IsPractice");
+            var validColumn = FindColumnIndex(header, "TrialValid");
+
+            if (participantColumn < 0 || methodColumn < 0 || practiceColumn < 0)
+                return 1;
+
+            var maximumCompletedParticipant = 0;
+            for (var rowIndex = 1; rowIndex < csvRows.Count; rowIndex++)
+            {
+                var row = csvRows[rowIndex];
+                if (!TryGetColumn(row, methodColumn, out var method) ||
+                    !string.Equals(method, VRKeyboardInputMode.HandTouch10.ToString(), StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (!TryGetColumn(row, practiceColumn, out var practiceValue) ||
+                    !bool.TryParse(practiceValue, out var isPractice) ||
+                    isPractice)
+                {
+                    continue;
+                }
+
+                // 旧 CSV 没有 TrialValid 列时按有效处理；新 CSV 明确为 false 时不算完成。
+                if (validColumn >= 0 &&
+                    (!TryGetColumn(row, validColumn, out var validValue) ||
+                     !bool.TryParse(validValue, out var isValid) ||
+                     !isValid))
+                {
+                    continue;
+                }
+
+                if (TryGetColumn(row, participantColumn, out var participantId) &&
+                    TryParseParticipantNumber(participantId, out var participantNumber))
+                {
+                    maximumCompletedParticipant = Mathf.Max(maximumCompletedParticipant, participantNumber);
+                }
+            }
+
+            return maximumCompletedParticipant == int.MaxValue
+                ? int.MaxValue
+                : maximumCompletedParticipant + 1;
+        }
+
+        static int FindColumnIndex(string[] header, string columnName)
+        {
+            if (header == null)
+                return -1;
+
+            for (var i = 0; i < header.Length; i++)
+            {
+                var value = (header[i] ?? string.Empty).TrimStart('\uFEFF').Trim();
+                if (string.Equals(value, columnName, StringComparison.OrdinalIgnoreCase))
+                    return i;
+            }
+
+            return -1;
+        }
+
+        static bool TryGetColumn(string[] row, int columnIndex, out string value)
+        {
+            value = string.Empty;
+            if (row == null || columnIndex < 0 || columnIndex >= row.Length)
+                return false;
+
+            value = (row[columnIndex] ?? string.Empty).Trim();
+            return true;
+        }
+
+        // 解析由本脚本写出的标准 CSV，正确处理逗号、双引号以及字段内换行。
+        static List<string[]> ParseCsv(string csvText)
+        {
+            var rows = new List<string[]>();
+            if (string.IsNullOrEmpty(csvText))
+                return rows;
+
+            var fields = new List<string>();
+            var fieldBuilder = new StringBuilder();
+            var insideQuotes = false;
+
+            for (var i = 0; i < csvText.Length; i++)
+            {
+                var character = csvText[i];
+                if (i == 0 && character == '\uFEFF')
+                    continue;
+
+                if (insideQuotes)
+                {
+                    if (character == '"')
+                    {
+                        if (i + 1 < csvText.Length && csvText[i + 1] == '"')
+                        {
+                            fieldBuilder.Append('"');
+                            i++;
+                        }
+                        else
+                        {
+                            insideQuotes = false;
+                        }
+                    }
+                    else
+                    {
+                        fieldBuilder.Append(character);
+                    }
+
+                    continue;
+                }
+
+                if (character == '"' && fieldBuilder.Length == 0)
+                {
+                    insideQuotes = true;
+                }
+                else if (character == ',')
+                {
+                    fields.Add(fieldBuilder.ToString());
+                    fieldBuilder.Clear();
+                }
+                else if (character == '\r' || character == '\n')
+                {
+                    fields.Add(fieldBuilder.ToString());
+                    fieldBuilder.Clear();
+                    AddCsvRowIfNotEmpty(rows, fields);
+                    fields.Clear();
+
+                    if (character == '\r' && i + 1 < csvText.Length && csvText[i + 1] == '\n')
+                        i++;
+                }
+                else
+                {
+                    fieldBuilder.Append(character);
+                }
+            }
+
+            if (fieldBuilder.Length > 0 || fields.Count > 0)
+            {
+                fields.Add(fieldBuilder.ToString());
+                AddCsvRowIfNotEmpty(rows, fields);
+            }
+
+            return rows;
+        }
+
+        static void AddCsvRowIfNotEmpty(List<string[]> rows, List<string> fields)
+        {
+            for (var i = 0; i < fields.Count; i++)
+            {
+                if (!string.IsNullOrEmpty(fields[i]))
+                {
+                    rows.Add(fields.ToArray());
+                    return;
+                }
+            }
         }
 
         // 准备一轮新试次：生成编号、清空旧句子和所有累计计数。
@@ -399,6 +673,9 @@ namespace VRTyping.Tests
             if (m_TrialCompleted)
                 return lastTrialResult;
 
+            // 输入框仍在编辑时也使用它的最新内容作为本次试次编号。
+            SynchronizeParticipantIdFromInputField();
+
             // 没有显式开始时先补齐开始时间。
             if (!m_TrialStarted)
                 BeginTrial();
@@ -440,8 +717,17 @@ namespace VRTyping.Tests
             };
 
             // Inspector 中开启自动导出时，测试结束立即追加到 CSV。
-            if (m_AutoExportCsv)
-                ExportCsv(lastTrialResult);
+            var exportSucceeded = m_AutoExportCsv && ExportCsv(lastTrialResult);
+
+            // HandTouch10 是六种输入方式中的最后一种。
+            // 有效正式结果成功写入后，重新扫描整个 CSV 并显示下一位参与者编号。
+            if (exportSucceeded &&
+                method == VRKeyboardInputMode.HandTouch10 &&
+                !m_IsPractice &&
+                m_TrialValid)
+            {
+                RefreshParticipantIdFromResults();
+            }
 
             return lastTrialResult;
         }
@@ -479,7 +765,7 @@ namespace VRTyping.Tests
             }
         }
 
-        void ExportCsv(TrialResult trial)
+        bool ExportCsv(TrialResult trial)
         {
             try
             {
@@ -500,11 +786,14 @@ namespace VRTyping.Tests
                 // 输出完整目录，方便在 Unity Console 中直接找到结果。
                 if (m_LogExportPath)
                     Debug.Log("Typing test CSV exported to: " + exportDirectory, this);
+
+                return true;
             }
             catch (Exception exception)
             {
                 // 文件被占用、目录无权限等写入错误会显示在 Console 中，不让游戏崩溃。
                 Debug.LogError("Failed to export typing test CSV: " + exception, this);
+                return false;
             }
         }
 
