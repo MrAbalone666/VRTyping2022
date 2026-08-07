@@ -38,6 +38,7 @@ namespace VRTyping.Keyboard
             // 控制器启用时，扫描子物体中的键并绑定事件。
             m_SwipeInput = GetComponent<VRKeyboardSwipeInput>();
             RegisterKeys();
+            RefreshKeyLabels();
         }
 
         void OnDisable()
@@ -98,6 +99,7 @@ namespace VRTyping.Keyboard
             if (m_SwipeInput != null && m_SwipeInput.TryHandleCandidateSelection(keyId))
                 return;
 
+            var labelsWereUppercase = m_CapsLockEnabled ^ m_ShiftEnabled;
             VRKeyboardTextComposer.HandleKey(
                 keyId,
                 m_OutputField,
@@ -105,6 +107,14 @@ namespace VRTyping.Keyboard
                 ref m_ShiftEnabled,
                 m_UseTabCharacter,
                 m_TabSpaces);
+
+            if (labelsWereUppercase != (m_CapsLockEnabled ^ m_ShiftEnabled))
+                RefreshKeyLabels();
+        }
+
+        void RefreshKeyLabels()
+        {
+            VRKeyboardKeyLabel.RefreshLabels(transform, m_CapsLockEnabled, m_ShiftEnabled);
         }
     }
 }

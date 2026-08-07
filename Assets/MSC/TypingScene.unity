@@ -140,7 +140,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &18333451
 RectTransform:
   m_ObjectHideFlags: 0
@@ -431,7 +431,7 @@ MonoBehaviour:
   m_PracticeSentences:
   - This is a testing sentence.
   - Practice helps you become familiar with the keyboard and input tool.
-  m_TestDurationSeconds: 120
+  m_TestDurationSeconds: 15
   m_StartOnFirstInput: 1
   m_FinishWhenTargetLengthReached: 1
   m_AutoNextSentences: 1
@@ -1043,8 +1043,8 @@ MonoBehaviour:
   m_MaxTrajectoryPoints: 256
   m_AppendSpaceAfterSwipeWord: 0
   m_SwipeRecognizer: {fileID: 0}
-  m_CandidateMoveAction: {fileID: 0}
-  m_CandidateConfirmAction: {fileID: 0}
+  m_CandidateMoveAction: {fileID: -60998027439631388, guid: c348712bda248c246b8c49b3db54643f, type: 3}
+  m_CandidateConfirmAction: {fileID: -4289430672226363583, guid: c348712bda248c246b8c49b3db54643f, type: 3}
   m_ShowCandidatesAfterSwipe: 1
   m_CandidateMoveThreshold: 0.55
   m_CandidateMoveRepeatDelay: 0.25

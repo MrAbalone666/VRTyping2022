@@ -131,6 +131,8 @@ namespace VRTyping.Tests
                 m_PracticeNoButton.onClick.AddListener(SelectFormalTest);
             if (m_InputModeDropdown != null)
                 m_InputModeDropdown.onValueChanged.AddListener(HandleInputModeDropdownChanged);
+            if (m_IsPracticeToggle != null)
+                m_IsPracticeToggle.onValueChanged.AddListener(HandlePracticeToggleChanged);
             if (m_TypingSession != null)
                 m_TypingSession.TrialFinished += HandleTrialFinished;
 
@@ -152,6 +154,8 @@ namespace VRTyping.Tests
                 m_PracticeNoButton.onClick.RemoveListener(SelectFormalTest);
             if (m_InputModeDropdown != null)
                 m_InputModeDropdown.onValueChanged.RemoveListener(HandleInputModeDropdownChanged);
+            if (m_IsPracticeToggle != null)
+                m_IsPracticeToggle.onValueChanged.RemoveListener(HandlePracticeToggleChanged);
             if (m_TypingSession != null)
                 m_TypingSession.TrialFinished -= HandleTrialFinished;
 
@@ -162,6 +166,7 @@ namespace VRTyping.Tests
         {
             m_FlowStage = FlowStage.Introduction;
             SetInputModeDropdownInteractable(true);
+            SetPracticeToggleInteractable(false);
             SetVisiblePage(m_InstructionCanvas);
             DeactivateTypingInput();
         }
@@ -170,6 +175,7 @@ namespace VRTyping.Tests
         {
             m_FlowStage = FlowStage.MethodInstruction;
             SetInputModeDropdownInteractable(true);
+            SetPracticeToggleInteractable(false);
             RefreshMethodInstruction(GetCurrentInputMode());
             HideTypingResult();
             SetVisiblePage(m_MethodInstruction);
@@ -180,6 +186,7 @@ namespace VRTyping.Tests
         {
             m_FlowStage = FlowStage.PracticeChoice;
             SetInputModeDropdownInteractable(true);
+            SetPracticeToggleInteractable(false);
             SetVisiblePage(m_PracticeOrNot);
             DeactivateTypingInput();
         }
@@ -198,7 +205,10 @@ namespace VRTyping.Tests
         {
             SynchronizeCurrentMethodFromSelector();
             m_FlowStage = isPractice ? FlowStage.PracticeTrial : FlowStage.FormalTrial;
-            SetInputModeDropdownInteractable(false);
+            // Keep the selector available during a trial so the input method can be
+            // changed at runtime from the UI dropdown when needed.
+            SetInputModeDropdownInteractable(true);
+            SetPracticeToggleInteractable(true);
 
             // TypingTestSession is the single mode-switch entry point: it synchronizes
             // ResultOutput, IsPracticeToggle, the active sentence set and the trial reset.
@@ -227,6 +237,26 @@ namespace VRTyping.Tests
             RefreshMethodInstruction(mode);
         }
 
+        void HandlePracticeToggleChanged(bool isPractice)
+        {
+            // TypingTestSession also listens to this Toggle and resets the trial with
+            // the matching sentence set. This listener keeps the instruction flow in
+            // sync when the participant changes mode during an active trial.
+            if (m_FlowStage != FlowStage.PracticeTrial &&
+                m_FlowStage != FlowStage.FormalTrial)
+            {
+                return;
+            }
+
+            m_FlowStage = isPractice ? FlowStage.PracticeTrial : FlowStage.FormalTrial;
+            SetInputModeDropdownInteractable(true);
+            SetPracticeToggleInteractable(true);
+            HideAllPages();
+
+            if (m_TypingSession != null && m_TypingSession.m_InputField != null)
+                m_TypingSession.m_InputField.ActivateInputField();
+        }
+
         void HandleMethodContinue()
         {
             if (m_FlowStage == FlowStage.FormalReady)
@@ -248,6 +278,7 @@ namespace VRTyping.Tests
 
             m_FlowStage = FlowStage.FormalResult;
             SetInputModeDropdownInteractable(false);
+            SetPracticeToggleInteractable(false);
             DeactivateTypingInput();
 
             if (m_ResultDelayCoroutine != null)
@@ -269,6 +300,7 @@ namespace VRTyping.Tests
             // until the participant explicitly continues.
             m_FlowStage = FlowStage.FormalReady;
             SetInputModeDropdownInteractable(false);
+            SetPracticeToggleInteractable(false);
 
             if (m_TypingSession != null)
                 m_TypingSession.SetPracticeMode(false);
@@ -279,7 +311,7 @@ namespace VRTyping.Tests
             if (m_MethodInstructionText != null)
             {
                 m_MethodInstructionText.text +=
-                    "\n\n<b>Practice complete.</b> Select Continue when you are ready to begin the formal test for this method.";
+                    "\n<b>Practice complete.</b> Select Continue when you are ready to begin the formal test for this method.";
             }
 
             SetVisiblePage(m_MethodInstruction);
@@ -289,7 +321,8 @@ namespace VRTyping.Tests
         void StartPreparedFormalTrial()
         {
             m_FlowStage = FlowStage.FormalTrial;
-            SetInputModeDropdownInteractable(false);
+            SetInputModeDropdownInteractable(true);
+            SetPracticeToggleInteractable(true);
             HideAllPages();
 
             if (m_TypingSession != null && m_TypingSession.m_InputField != null)
@@ -302,6 +335,7 @@ namespace VRTyping.Tests
             {
                 m_FlowStage = FlowStage.Completed;
                 SetInputModeDropdownInteractable(false);
+                SetPracticeToggleInteractable(false);
                 DeactivateTypingInput();
                 return;
             }
@@ -374,7 +408,7 @@ namespace VRTyping.Tests
             {
                 case VRKeyboardInputMode.Swipe:
                     m_MethodInstructionText.text =
-                        "<b>Current method: Swipe</b>\n\n" +
+                        "<b>Current method: Swipe</b>\n" +
                         "Aim the controller ray at the first letter, hold the trigger and move continuously across the letters of the word. Release the trigger to finish the gesture. The recogniser displays candidate words. Use the right thumbstick to highlight a candidate and press the right trigger to confirm it.";
                     break;
 
@@ -441,6 +475,12 @@ namespace VRTyping.Tests
         {
             if (m_InputModeDropdown != null)
                 m_InputModeDropdown.interactable = interactable;
+        }
+
+        void SetPracticeToggleInteractable(bool interactable)
+        {
+            if (m_IsPracticeToggle != null)
+                m_IsPracticeToggle.interactable = interactable;
         }
 
         static GameObject FindNamedGameObject(string objectName)

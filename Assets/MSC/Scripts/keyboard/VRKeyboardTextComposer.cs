@@ -241,6 +241,34 @@ namespace VRTyping.Keyboard
             return uppercase ? value.ToUpperInvariant() : value.ToLowerInvariant();
         }
 
+        public static string ApplySwipeWordCase(string value, bool capsLockEnabled, bool shiftEnabled)
+        {
+            if (string.IsNullOrEmpty(value))
+                return string.Empty;
+
+            // Swipe commits a whole word at once, so its Shift behavior differs from
+            // single-key input: CapsLock uppercases the complete word, while Shift
+            // capitalizes only the first letter and is consumed after that word.
+            if (capsLockEnabled)
+                return value.ToUpperInvariant();
+
+            var normalized = value.ToLowerInvariant();
+            if (!shiftEnabled)
+                return normalized;
+
+            var characters = normalized.ToCharArray();
+            for (var i = 0; i < characters.Length; i++)
+            {
+                if (!char.IsLetter(characters[i]))
+                    continue;
+
+                characters[i] = char.ToUpperInvariant(characters[i]);
+                break;
+            }
+
+            return new string(characters);
+        }
+
         public static string BuildLetterSequence(
             IList<string> keyIds,
             bool capsLockEnabled,
@@ -251,7 +279,6 @@ namespace VRTyping.Keyboard
 
             // 把一串按键 ID 组合成字母序列，常用于滑动输入/轨迹识别前的候选字符串。
             var builder = new StringBuilder(keyIds.Count);
-            var uppercase = capsLockEnabled ^ shiftEnabled;
 
             for (var i = 0; i < keyIds.Count; i++)
             {
@@ -259,13 +286,10 @@ namespace VRTyping.Keyboard
                 if (string.IsNullOrEmpty(keyId) || keyId.Length != 1 || !char.IsLetter(keyId[0]))
                     continue;
 
-                var character = uppercase
-                    ? char.ToUpperInvariant(keyId[0])
-                    : char.ToLowerInvariant(keyId[0]);
-                builder.Append(character);
+                builder.Append(char.ToLowerInvariant(keyId[0]));
             }
 
-            return builder.ToString();
+            return ApplySwipeWordCase(builder.ToString(), capsLockEnabled, shiftEnabled);
         }
     }
 }

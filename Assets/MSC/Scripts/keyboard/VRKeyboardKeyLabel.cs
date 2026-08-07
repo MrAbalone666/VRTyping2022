@@ -10,10 +10,17 @@ namespace VRTyping.Keyboard
 
         public static void EnsureLabel(VRKeyboardKey key)
         {
-            if (key == null || key.pressTarget == null || key.pressCollider == null)
+            EnsureLabel(key, false, false);
+        }
+
+        public static void EnsureLabel(VRKeyboardKey key, bool capsLockEnabled, bool shiftEnabled)
+        {
+            if (key == null || !key.showLabel || key.pressTarget == null || key.pressCollider == null)
                 return;
 
-            var label = GetDisplayLabel(VRKeyboardKeyUtility.GetKeyId(key));
+            var label = GetDisplayLabel(
+                VRKeyboardKeyUtility.GetKeyId(key),
+                capsLockEnabled ^ shiftEnabled);
             if (string.IsNullOrEmpty(label))
                 return;
 
@@ -34,6 +41,42 @@ namespace VRTyping.Keyboard
 
             PositionLabel(key, text.rectTransform);
             ConfigureText(text, label);
+        }
+
+        public static void RefreshLabels(Transform keyboardRoot, bool capsLockEnabled, bool shiftEnabled)
+        {
+            if (keyboardRoot == null)
+                return;
+
+            var keys = keyboardRoot.GetComponentsInChildren<VRKeyboardKey>(true);
+            for (var i = 0; i < keys.Length; i++)
+                RefreshLabelText(keys[i], capsLockEnabled, shiftEnabled);
+        }
+
+        static void RefreshLabelText(VRKeyboardKey key, bool capsLockEnabled, bool shiftEnabled)
+        {
+            if (key == null || !key.showLabel || key.pressTarget == null)
+                return;
+
+            var label = GetDisplayLabel(
+                VRKeyboardKeyUtility.GetKeyId(key),
+                capsLockEnabled ^ shiftEnabled);
+            if (string.IsNullOrEmpty(label))
+                return;
+
+            var existing = key.pressTarget.Find(k_LabelName);
+            var text = existing != null ? existing.GetComponent<TextMeshPro>() : null;
+            if (text == null)
+            {
+                // Labels that do not exist yet still need the one-time placement pass.
+                EnsureLabel(key, capsLockEnabled, shiftEnabled);
+                return;
+            }
+
+            // A case change must not recalculate the transform. The key cap may be in
+            // the middle of its press animation, and positioning against the stationary
+            // collider at that moment would leave the label offset after the cap returns.
+            text.text = label;
         }
 
         static void PositionLabel(VRKeyboardKey key, RectTransform rect)
@@ -110,7 +153,7 @@ namespace VRTyping.Keyboard
             }
         }
 
-        static string GetDisplayLabel(string keyId)
+        static string GetDisplayLabel(string keyId, bool uppercaseLetters)
         {
             switch (keyId)
             {
@@ -132,7 +175,12 @@ namespace VRTyping.Keyboard
                 case "ques": return "/";
                 case "Tab_1": return "\\";
                 case "Space": return "Space";
-                default: return keyId.Length == 1 ? keyId.ToUpperInvariant() : keyId;
+                default:
+                    return keyId.Length == 1 && char.IsLetter(keyId[0])
+                        ? uppercaseLetters
+                            ? keyId.ToUpperInvariant()
+                            : keyId.ToLowerInvariant()
+                        : keyId;
             }
         }
     }

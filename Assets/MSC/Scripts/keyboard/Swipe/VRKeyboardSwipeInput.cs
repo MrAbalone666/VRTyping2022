@@ -163,7 +163,9 @@ namespace VRTyping.Keyboard
         int m_SelectedCandidateIndex;
         float m_NextCandidateMoveTime;
         float m_NextProbeRefreshTime;
-        bool m_CandidateConfirmWasHeld;
+        bool m_CandidateActionConfirmWasHeld;
+        bool m_RightCandidateConfirmWasHeld;
+        bool m_LeftCandidateConfirmWasHeld;
         bool m_EnabledCandidateMoveAction;
         bool m_EnabledCandidateConfirmAction;
         bool m_RecognizerConfigured;
@@ -180,6 +182,7 @@ namespace VRTyping.Keyboard
             RefreshReferences();
             EnableCandidateInputActions();
             ClearPreview();
+            RefreshKeyLabels();
         }
 
         void OnDisable()
@@ -284,21 +287,29 @@ namespace VRTyping.Keyboard
         void UpdateCandidateControllerSelection()
         {
             var axis = ReadCandidateMoveAxis();
-            if (Mathf.Abs(axis.x) >= m_CandidateMoveThreshold && Time.time >= m_NextCandidateMoveTime)
+            var navigationValue = Mathf.Abs(axis.x) >= Mathf.Abs(axis.y) ? axis.x : axis.y;
+            if (Mathf.Abs(navigationValue) >= m_CandidateMoveThreshold && Time.time >= m_NextCandidateMoveTime)
             {
-                MoveSelectedCandidate(axis.x > 0f ? 1 : -1);
+                MoveSelectedCandidate(navigationValue > 0f ? 1 : -1);
                 m_NextCandidateMoveTime = Time.time + m_CandidateMoveRepeatDelay;
             }
-            else if (Mathf.Abs(axis.x) < m_CandidateMoveThreshold * 0.5f)
+            else if (Mathf.Abs(navigationValue) < m_CandidateMoveThreshold * 0.5f)
             {
                 m_NextCandidateMoveTime = 0f;
             }
 
-            var confirmHeld = ReadCandidateConfirmHeld();
-            if (confirmHeld && !m_CandidateConfirmWasHeld)
+            ReadCandidateConfirmSources(out var actionHeld, out var rightHeld, out var leftHeld);
+            var confirmPressed =
+                (actionHeld && !m_CandidateActionConfirmWasHeld) ||
+                (rightHeld && !m_RightCandidateConfirmWasHeld) ||
+                (leftHeld && !m_LeftCandidateConfirmWasHeld);
+
+            if (confirmPressed)
                 CommitPendingCandidate(m_SelectedCandidateIndex, true);
 
-            m_CandidateConfirmWasHeld = confirmHeld;
+            m_CandidateActionConfirmWasHeld = actionHeld;
+            m_RightCandidateConfirmWasHeld = rightHeld;
+            m_LeftCandidateConfirmWasHeld = leftHeld;
         }
 
         void MoveSelectedCandidate(int delta)
@@ -343,10 +354,10 @@ namespace VRTyping.Keyboard
             return axisValue;
         }
 
-        bool ReadCandidateConfirmHeld()
+        void ReadCandidateConfirmSources(out bool actionHeld, out bool rightHeld, out bool leftHeld)
         {
             var action = m_CandidateConfirmAction != null ? m_CandidateConfirmAction.action : null;
-            var actionHeld = false;
+            actionHeld = false;
             if (action != null)
             {
                 try
@@ -359,9 +370,8 @@ namespace VRTyping.Keyboard
                 }
             }
 
-            return actionHeld ||
-                   ReadControllerConfirmHeld(UnityEngine.XR.InputDeviceCharacteristics.Right) ||
-                   ReadControllerConfirmHeld(UnityEngine.XR.InputDeviceCharacteristics.Left);
+            rightHeld = ReadControllerConfirmHeld(UnityEngine.XR.InputDeviceCharacteristics.Right);
+            leftHeld = ReadControllerConfirmHeld(UnityEngine.XR.InputDeviceCharacteristics.Left);
         }
 
         bool TryReadControllerMoveAxis(UnityEngine.XR.InputDeviceCharacteristics hand, out Vector2 axis)
@@ -390,19 +400,45 @@ namespace VRTyping.Keyboard
 
         UnityEngine.XR.InputDevice GetControllerDevice(UnityEngine.XR.InputDeviceCharacteristics hand)
         {
+            if (TryGetControllerDevice(
+                    hand | UnityEngine.XR.InputDeviceCharacteristics.Controller,
+                    out var device))
+            {
+                return device;
+            }
+
+            if (TryGetControllerDevice(
+                    hand | UnityEngine.XR.InputDeviceCharacteristics.HeldInHand,
+                    out device))
+            {
+                return device;
+            }
+
+            return TryGetControllerDevice(hand, out device)
+                ? device
+                : default(UnityEngine.XR.InputDevice);
+        }
+
+        bool TryGetControllerDevice(
+            UnityEngine.XR.InputDeviceCharacteristics characteristics,
+            out UnityEngine.XR.InputDevice device)
+        {
             m_ControllerDevices.Clear();
             UnityEngine.XR.InputDevices.GetDevicesWithCharacteristics(
-                hand |
-                UnityEngine.XR.InputDeviceCharacteristics.Controller,
+                characteristics,
                 m_ControllerDevices);
 
             for (var i = 0; i < m_ControllerDevices.Count; i++)
             {
                 if (m_ControllerDevices[i].isValid)
-                    return m_ControllerDevices[i];
+                {
+                    device = m_ControllerDevices[i];
+                    return true;
+                }
             }
 
-            return default(UnityEngine.XR.InputDevice);
+            device = default(UnityEngine.XR.InputDevice);
+            return false;
         }
 
         public bool TryHandleCandidateSelection(string keyId)
@@ -701,7 +737,7 @@ namespace VRTyping.Keyboard
                         return true;
                     }
 
-                    committedText = VRKeyboardTextComposer.ApplyLetterCase(
+                    committedText = VRKeyboardTextComposer.ApplySwipeWordCase(
                         best.word,
                         m_CapsLockEnabled,
                         m_ShiftEnabled);
@@ -713,8 +749,7 @@ namespace VRTyping.Keyboard
                         committedText += " ";
                     VRKeyboardTextComposer.AppendText(m_OutputField, committedText);
 
-                    if (m_ShiftEnabled)
-                        m_ShiftEnabled = false;
+                    ReleaseShiftAfterCommit();
 
                     return false;
                 }
@@ -725,14 +760,15 @@ namespace VRTyping.Keyboard
                 VRKeyboardTextComposer.AppendText(m_OutputField, committedText);
 
                 // Shift 作为一次性状态，提交一次内容后自动关闭。
-                if (m_ShiftEnabled)
-                    m_ShiftEnabled = false;
+                ReleaseShiftAfterCommit();
 
                 return false;
             }
 
             // 如果最终只有一个键，并且它不是普通字母序列，则按普通键处理，例如 Back/Space。
             if (compactKeys.Count == 1)
+            {
+                var labelsWereUppercase = m_CapsLockEnabled ^ m_ShiftEnabled;
                 VRKeyboardTextComposer.HandleKey(
                     compactKeys[0],
                     m_OutputField,
@@ -740,6 +776,10 @@ namespace VRTyping.Keyboard
                     ref m_ShiftEnabled,
                     m_UseTabCharacter,
                     m_TabSpaces);
+
+                if (labelsWereUppercase != (m_CapsLockEnabled ^ m_ShiftEnabled))
+                    RefreshKeyLabels();
+            }
 
             return false;
         }
@@ -762,13 +802,18 @@ namespace VRTyping.Keyboard
             m_PendingSwipeCandidates.Clear();
             m_SelectedCandidateIndex = 0;
             m_NextCandidateMoveTime = 0f;
-            m_CandidateConfirmWasHeld = false;
+            m_CandidateActionConfirmWasHeld = false;
+            m_RightCandidateConfirmWasHeld = false;
+            m_LeftCandidateConfirmWasHeld = false;
             for (var i = 0; i < candidates.Count; i++)
                 m_PendingSwipeCandidates.Add(candidates[i]);
 
             m_SelectedCandidateIndex = 0;
             m_NextCandidateMoveTime = 0f;
-            m_CandidateConfirmWasHeld = ReadCandidateConfirmHeld();
+            ReadCandidateConfirmSources(
+                out m_CandidateActionConfirmWasHeld,
+                out m_RightCandidateConfirmWasHeld,
+                out m_LeftCandidateConfirmWasHeld);
             RefreshCandidatePreview();
         }
 
@@ -783,7 +828,11 @@ namespace VRTyping.Keyboard
             for (var i = 0; i < m_PendingSwipeCandidates.Count; i++)
             {
                 var color = i == m_SelectedCandidateIndex ? selectedColor : normalColor;
-                words.Add("<color=#" + color + ">" + (i + 1).ToString() + ":" + m_PendingSwipeCandidates[i].word + "</color>");
+                var displayWord = VRKeyboardTextComposer.ApplySwipeWordCase(
+                    m_PendingSwipeCandidates[i].word,
+                    m_CapsLockEnabled,
+                    m_ShiftEnabled);
+                words.Add("<color=#" + color + ">" + (i + 1).ToString() + ":" + displayWord + "</color>");
             }
 
             m_SwipePreviewLabel.richText = true;
@@ -800,7 +849,7 @@ namespace VRTyping.Keyboard
             if (recordPhysicalAction)
                 VRKeyboardInputTelemetry.RecordCandidateSelectionAction();
 
-            var committedText = VRKeyboardTextComposer.ApplyLetterCase(
+            var committedText = VRKeyboardTextComposer.ApplySwipeWordCase(
                 m_PendingSwipeCandidates[index].word,
                 m_CapsLockEnabled,
                 m_ShiftEnabled);
@@ -810,8 +859,7 @@ namespace VRTyping.Keyboard
 
             VRKeyboardTextComposer.AppendText(m_OutputField, committedText);
 
-            if (m_ShiftEnabled)
-                m_ShiftEnabled = false;
+            ReleaseShiftAfterCommit();
 
             ClearPreview();
         }
@@ -820,6 +868,20 @@ namespace VRTyping.Keyboard
         {
             // 只从 keyId 中提取字母，并按 CapsLock/Shift 应用大小写。
             return VRKeyboardTextComposer.BuildLetterSequence(compactKeys, m_CapsLockEnabled, m_ShiftEnabled);
+        }
+
+        void ReleaseShiftAfterCommit()
+        {
+            if (!m_ShiftEnabled)
+                return;
+
+            m_ShiftEnabled = false;
+            RefreshKeyLabels();
+        }
+
+        void RefreshKeyLabels()
+        {
+            VRKeyboardKeyLabel.RefreshLabels(transform, m_CapsLockEnabled, m_ShiftEnabled);
         }
 
         VRKeyboardKey FindTouchedKey(Collider probeCollider)
@@ -953,7 +1015,9 @@ namespace VRTyping.Keyboard
             // 没有进行中的 swipe 时清空预览。
             m_SelectedCandidateIndex = 0;
             m_NextCandidateMoveTime = 0f;
-            m_CandidateConfirmWasHeld = false;
+            m_CandidateActionConfirmWasHeld = false;
+            m_RightCandidateConfirmWasHeld = false;
+            m_LeftCandidateConfirmWasHeld = false;
 
             if (m_SwipePreviewLabel != null)
                 m_SwipePreviewLabel.text = string.Empty;
