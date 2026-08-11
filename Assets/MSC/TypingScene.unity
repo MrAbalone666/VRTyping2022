@@ -419,19 +419,19 @@ MonoBehaviour:
   m_TimerText: {fileID: 1077546643}
   m_IsPracticeToggle: {fileID: 1615960735}
   m_Sentences:
-  - This is a sentence.
+  - This is a formal test sentence.
   - Different input methods may affect typing speed and error rate.
   - Virtual reality typing needs accuracy, speed, and comfort.
   - The bright window filled the room with soft afternoon light.
   - Accurate input is important when speed and comfort are measured.
-  - Accurate input is important when speed and comfort are measured.
+  - A careful user can type quickly while making very few mistakes.
   - If a glass ball and a rubber ball of the same size are dropped from the same
     height, which ball will bounce higher?
-  - A careful user can type quickly while making very few mistakes.
+  - This is the final sentence.
   m_PracticeSentences:
   - This is a testing sentence.
   - Practice helps you become familiar with the keyboard and input tool.
-  m_TestDurationSeconds: 15
+  m_TestDurationSeconds: 120
   m_StartOnFirstInput: 1
   m_FinishWhenTargetLengthReached: 1
   m_AutoNextSentences: 1
@@ -7756,7 +7756,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2243020122246761220, guid: 77e7c27b2c5525e4aa8cc9f99d654486, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: 44.7
       objectReference: {fileID: 0}
     - target: {fileID: 2243020122246761220, guid: 77e7c27b2c5525e4aa8cc9f99d654486, type: 3}
       propertyPath: m_AnchoredPosition.y
@@ -7896,7 +7896,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7434851322346956810, guid: 77e7c27b2c5525e4aa8cc9f99d654486, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: 44.7
       objectReference: {fileID: 0}
     - target: {fileID: 7434851322346956810, guid: 77e7c27b2c5525e4aa8cc9f99d654486, type: 3}
       propertyPath: m_AnchoredPosition.y
