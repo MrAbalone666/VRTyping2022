@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace VRTyping.Keyboard
 {
-    // 把 3D 键盘布局投影到 2D 归一化平面，供 Swipe 轨迹识别使用。
+    // 把 3D 键盘布局投影到 2D 归一化平面
     public sealed class SwipeKeyboardLayout
     {
         // 键盘根节点，用来把世界坐标转换成本地坐标。

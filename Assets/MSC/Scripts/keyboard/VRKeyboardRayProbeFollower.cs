@@ -9,85 +9,75 @@ namespace VRTyping.Keyboard
     // 让一个虚拟按压探针跟随 XR 射线末端，用射线输入模拟手指按键、凝视输入或滑动输入。
     public class VRKeyboardRayProbeFollower : MonoBehaviour
     {
-        [Header("References")]
-
-        [Tooltip("The Near-Far Interactor that owns the visible ray.")]
+       
         // 提供射线曲线终点和命中法线的 XR 交互器。
         public NearFarInteractor m_NearFarInteractor;
 
-        [Tooltip("Controller hand driven by this probe. Auto infers from the interactor hierarchy.")]
+      
         public VRKeyboardControllerHand m_ControllerHand = VRKeyboardControllerHand.Auto;
 
 
-        [Tooltip("Optional visual child used to show the probe position in play mode.")]
+       
         // 运行时用来显示探针位置的可选可视物体。
         public Transform m_Visual;
 
-        [Header("Follow Settings")]
-
-        [Tooltip("Keeps the probe slightly inside the hit surface even when not pressing.")]
+      
         // 普通按压/滑动模式下，让探针略微进入表面，确保能稳定接触到按键。
         public float m_BaseSurfaceOffset = 0.001f;
 
 
-        [Tooltip("Input action that provides the trigger or press value in the 0..1 range.")]
+      
         // 通常绑定到扳机键或按压输入，值范围是 0 到 1。
         public InputActionReference m_PressValueAction;
 
 
-        [Min(0f)]
-        [Tooltip("Maximum extra distance the probe moves into the surface while the trigger is held.")]
+        
         // 扳机完全按下时，探针额外向命中表面内部移动的最大距离。
         public float m_MaxPressDepth = 0.012f;
 
 
-        [Min(0f)]
-        [Tooltip("How quickly the virtual poke depth follows the trigger value.")]
+        
         // 按压深度跟随输入值的速度，用于让虚拟按压更平滑。
         float m_PressDepthSpeed = 0.05f;
 
 
-        [Tooltip("When there is no 3D hit, place the probe at the curve end instead of disabling it.")]
+        
         // 没有命中物体时，是否仍让探针停在射线末端/备用距离处。
         public bool m_FollowRayEndWhenNoHit = true;
 
 
-        [Min(0.01f)]
-        [Tooltip("Fallback distance used when no valid curve endpoint is available.")]
+       
         // 射线没有有效终点时，从射线原点向前放置探针的距离。
         public float m_NoHitDistance = 5f;
 
         [SerializeField]
-        [Tooltip("Periodically print probe state for diagnostics. Keep disabled during normal VR use.")]
         bool m_LogProbeStatus;
 
 
         [Range(0f, 1f)]
-        [Tooltip("Minimum press input required before the current key is locked for pressing.")]
         // 扳机值超过该阈值后，当前悬停按键会被锁定为正在按压的键。
         float m_PressActivationThreshold = 0.1f;
 
 
-        [Tooltip("Extra depth used to keep the probe overlapping keys while swipe mode is active.")]
+
         // 滑动输入时使用的固定接触深度，让探针持续与按键触发器重叠。
         float m_SwipeContactDepth = 0.003f;
 
-        [Header("Dwell Settings")]
 
         [Range(0f, 1f)]
-        [Tooltip("Low-intensity highlight applied to the currently hovered key in ray press mode.")]
+
         // 射线按压模式下，仅悬停但未真正按下时的低强度高亮。
         public float m_PressHoverHighlight = 0.22f;
 
 
         [Min(0f)]
-        [Tooltip("Surface offset used only while dwell mode is active.")]
+
         // 凝视模式下使用更大的表面偏移，避免探针过深导致误触。
         float m_DwellSurfaceOffset = 0.008f;
 
 
         [Min(0.05f)]
-        [Tooltip("How long the ray must remain on the same key before it is automatically entered.")]
+
         // 凝视停留多久后自动完成一次按键输入。
         float m_DwellDuration = 0.6f;
 

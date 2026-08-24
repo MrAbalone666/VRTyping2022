@@ -13,7 +13,7 @@ namespace VRTyping.Keyboard
     // 3. 在手部模式下隐藏控制器模型和提示，并限制指尖/手模型不要穿透键盘。
     public class VRKeyboardHandProbeFollower : MonoBehaviour
     {
-        [Header("Probe Setup")]
+
         // 左右食指探针；HandTouch 模式只使用这两个，HandTouch10 模式会额外创建其他手指探针。
         [SerializeField] Transform m_LeftProbe;
         [SerializeField] Transform m_RightProbe;
@@ -22,7 +22,7 @@ namespace VRTyping.Keyboard
         // 关闭后探针仍然参与碰撞输入，只是不显示小球模型。
         [SerializeField] bool m_ShowProbeVisuals = true;
 
-        [Header("Input")]
+
         // 可分别禁用左手或右手，便于单手测试或只允许一只手输入。
         [SerializeField] bool m_UseLeftHand = true;
         [SerializeField] bool m_UseRightHand = true;
@@ -32,7 +32,7 @@ namespace VRTyping.Keyboard
         [SerializeField, Min(0.05f)] float m_DeviceRefreshInterval = 1f;
         [SerializeField] bool m_ShowDebugStatus = true;
 
-        [Header("Pose Space")]
+
         // 优先跟随场景里的手模型骨骼，这样小球能贴到你实际看见的手指上。
         [SerializeField] bool m_PreferHandSkeletonTargets = true;
         // false = 左右食指输入；true = 十个手指都生成输入探针。
@@ -53,7 +53,7 @@ namespace VRTyping.Keyboard
         // 用于微调探针相对指尖的位置，例如让小球略微贴近指腹。
         [SerializeField] Vector3 m_ProbePoseOffset;
 
-        [Header("Keyboard Surface Clamp")]
+
         // 限制探针最大下压深度，防止指尖小球穿过键盘。
         [SerializeField] bool m_EnableKeyboardSurfaceClamp = true;
         // 开启后不只限制小球，也会把手模型整体沿修正量拉回键盘表面。
@@ -68,7 +68,7 @@ namespace VRTyping.Keyboard
         [SerializeField] Transform m_LeftHandVisualRoot;
         [SerializeField] Transform m_RightHandVisualRoot;
 
-        [Header("Hand Visuals")]
+
         // 检测到手部追踪时隐藏控制器模型，避免手和手柄同时显示。
         [SerializeField] bool m_HideControllerVisualsWhenHandTracked = true;
         [SerializeField] Transform m_LeftControllerVisualRoot;

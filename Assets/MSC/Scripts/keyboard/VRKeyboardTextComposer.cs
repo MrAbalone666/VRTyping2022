@@ -18,7 +18,13 @@ namespace VRTyping.Keyboard
     // 统一发布键盘层的物理输入动作，供实验记录器统计。
     public static class VRKeyboardInputTelemetry
     {
+        public static event Action InputStarted;
         public static event Action<VRKeyboardPhysicalActionKind> PhysicalActionRecorded;
+
+        public static void NotifyInputStarted()
+        {
+            InputStarted?.Invoke();
+        }
 
         public static void RecordKeyAction(string keyId)
         {

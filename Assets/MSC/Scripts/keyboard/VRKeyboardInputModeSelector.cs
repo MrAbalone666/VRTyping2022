@@ -19,23 +19,23 @@ namespace VRTyping.Keyboard
     {
         [SerializeField] VRKeyboardInputMode m_InputMode = VRKeyboardInputMode.Press;
 
-        [Header("Input Components")]
+
         [SerializeField] VRKeyboardController m_PressInput;
         [SerializeField] VRKeyboardSwipeInput m_SwipeInput;
 
-        [Tooltip("Legacy primary ray probe. Keep this assigned for Swipe and Dwell if you do not assign a right probe object.")]
+
         [SerializeField] VRKeyboardRayProbeFollower m_RayProbeInput;
 
-        [Tooltip("Legacy primary stick probe.")]
+
         [SerializeField] VRKeyboardStickProbeFollower m_StickTapInput;
 
         [SerializeField] VRKeyboardHandProbeFollower m_HandTouchInput;
 
-        [Header("Controller Probe Objects")]
-        [Tooltip("Drag the left controller follow sphere here. It can contain Ray and Stick probe follower components.")]
+
+
         public GameObject m_LeftControllerProbeObject;
 
-        [Tooltip("Drag the right controller follow sphere here. It can contain Ray and Stick probe follower components.")]
+
         public GameObject m_RightControllerProbeObject;
 
         readonly List<VRKeyboardRayProbeFollower> m_RayProbeCache = new List<VRKeyboardRayProbeFollower>(4);

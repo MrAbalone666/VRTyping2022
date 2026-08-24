@@ -17,7 +17,6 @@ namespace VRTyping.Tests
         // 在成绩计算和结果导出完成后触发。参数表示刚完成的试次是否为练习。
         public event Action<bool> TrialFinished;
 
-        [Header("Input")]
         // 玩家最终输入文字的 TMP 输入框。
         // VRKeyboardController / VRKeyboardTextComposer 会把键盘输入写进这个输入框，
         // 本脚本通过 onValueChanged 监听它的内容变化。
@@ -35,7 +34,6 @@ namespace VRTyping.Tests
         public TMP_Text m_TimerText;
        
 
-        [Header("Test")]
         // 勾选表示练习模式，取消勾选表示正式测试。
         // 状态会与 ResultOutput.m_IsPractice 保持一致。
         public Toggle m_IsPracticeToggle;
@@ -76,7 +74,7 @@ namespace VRTyping.Tests
         // 这样可以在输入框里直接看到正确/错误字符颜色，而不是只显示在外部文本上。
         public bool m_ShowColoredComparisonInInputField = true;
 
-        [Header("Colors")]
+
         // 目标句中尚未输入的普通字符颜色。
         public Color m_TargetColor = new Color(0.92f, 0.92f, 0.92f, 1f);
 
@@ -101,7 +99,7 @@ namespace VRTyping.Tests
         // 目标句中已经被玩家输入过的位置颜色。
         public Color m_CompletedTargetColor = new Color(0.65f, 0.65f, 0.65f, 1f);
 
-        [Header("Result Panel")]
+
         // 最终成绩面板。测试结束时会 SetActive(true)，Reset 时会隐藏。
         public RectTransform m_ResultPanel;
 
@@ -172,6 +170,7 @@ namespace VRTyping.Tests
                 m_InputField.onValueChanged.AddListener(HandleInputChanged);
             if (m_IsPracticeToggle != null)
                 m_IsPracticeToggle.onValueChanged.AddListener(HandlePracticeModeChanged);
+            VRKeyboardInputTelemetry.InputStarted += HandleInputStarted;
             VRKeyboardInputTelemetry.PhysicalActionRecorded += HandlePhysicalInputAction;
         }
 
@@ -182,6 +181,7 @@ namespace VRTyping.Tests
                 m_InputField.onValueChanged.RemoveListener(HandleInputChanged);
             if (m_IsPracticeToggle != null)
                 m_IsPracticeToggle.onValueChanged.RemoveListener(HandlePracticeModeChanged);
+            VRKeyboardInputTelemetry.InputStarted -= HandleInputStarted;
             VRKeyboardInputTelemetry.PhysicalActionRecorded -= HandlePhysicalInputAction;
         }
 
@@ -577,6 +577,14 @@ namespace VRTyping.Tests
                 StartTiming();
         }
 
+        void HandleInputStarted()
+        {
+            // Swipe uses this event when its first valid trajectory begins, before
+            // the completed word and its physical-action count are committed.
+            if (!m_TestFinished && !m_TestStarted && m_StartOnFirstInput)
+                StartTiming();
+        }
+
         void StartTiming()
         {
             if (m_TestStarted)
@@ -630,10 +638,7 @@ namespace VRTyping.Tests
             var builder = new StringBuilder();
             var playerLength = string.IsNullOrEmpty(playerText) ? 0 : playerText.Length;
 
-            // 逐字符构建目标句显示：
-            // 1. 已经输入到的位置使用 completed color；
-            // 2. 当前下一位使用 current target color；
-            // 3. 后续未输入字符使用 target color。
+
             for (var i = 0; i < m_TargetSentence.Length; i++)
             {
                 var color = i < playerLength
@@ -661,10 +666,7 @@ namespace VRTyping.Tests
 
             var builder = new StringBuilder(playerText.Length * 24);
 
-            // 逐字符比较玩家输入和目标句：
-            // 1. 超过目标句长度的字符显示为 Extra；
-            // 2. 与目标句对应字符一致则显示为 Correct；
-            // 3. 不一致则显示为 Error，也就是错误标红逻辑。
+
             for (var i = 0; i < playerText.Length; i++)
             {
                 var color = i >= m_TargetSentence.Length
@@ -989,8 +991,6 @@ namespace VRTyping.Tests
 
         void AppendEscapedChar(StringBuilder builder, char value)
         {
-            // 对 TMP 富文本里的特殊字符做转义。
-            // 否则玩家输入 '<'、'>'、'&' 时可能会被 TextMeshPro 当作标签解析。
             switch (value)
             {
                 case '<':
@@ -1038,10 +1038,6 @@ namespace VRTyping.Tests
                     // 当前两个字符相同则替换代价为 0，否则替换代价为 1。
                     var cost = source[i - 1] == target[j - 1] ? 0 : 1;
 
-                    // 三种可能：
-                    // 1. current[j - 1] + 1：插入 target[j - 1]；
-                    // 2. previous[j] + 1：删除 source[i - 1]；
-                    // 3. previous[j - 1] + cost：匹配或替换当前字符。
                     current[j] = Math.Min(
                         Math.Min(current[j - 1] + 1, previous[j] + 1),
                         previous[j - 1] + cost);

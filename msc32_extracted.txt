@@ -1,0 +1,2888 @@
+
+
+===== PDF PAGE 1 =====
+
+School of Computer Science
+FACULTY OF ENGINEERING AND
+PHYSICAL SCIENCES
+<Full title of Project>
+<Full Name of Author>
+Submitted in accordance with the requirements for the degree of
+<Name of Degree>
+<Session>
+
+===== PDF PAGE 2 =====
+
+ii
+The candidate confirms that the following have been submitted.
+<As an example>
+Items Format Recipient(s) and Date
+Beliverable 1, 2, 3 Report SSO (DD/MM/YY)
+Participant consent forms Signed forms in envelop SSO (DD/MM/YY)
+Deliverable 4 Software codes or URL Supervisor, Assessor
+(DD/MM/YY)
+Deliverable 5 User manuals Client, Supervisor
+(DD/MM/YY)
+Type of project:
+The candidate confirms that the work submitted is their own and the appropriate credit
+has been given where reference has been made to the work of others.
+I understand that failure to attribute material which is obtained from another source may
+be considered as plagiarism.
+(Signature of Student)
+c○<Session> The University of Leeds and <Full Name of Author>
+
+===== PDF PAGE 3 =====
+
+iii
+Summary
+Text entry is still a major problem in virtual reality (VR). Virtual QWERTY keyboards
+use a layout that many users already know, but typing in VR can still be slow,
+inaccurate, and tiring. VR systems use different input methods, such as controller
+pointing, dwell input, swipe input, and hand tracking. However, past studies often use
+different hardware, tasks, keyboard designs, and measures. Because of these differences,
+their results are difficult to compare directly.
+To make the comparison more consistent, this project developed a VR typing
+application in Unity with six input methods. Press uses a controller ray and trigger to
+select keys. Dwell uses a controller ray and a fixed wait time. Swipe uses a controller to
+draw a path across the keyboard. StickTap uses direct controller contact with the keys.
+HandTouch uses two tracked index fingers, while HandTouch10 uses ten tracked fingers.
+All six methods use the same virtual QWERTY keyboard, target phrases, display, and
+timer. The application records typing speed, text errors, corrections, and input actions.
+It also collects user ratings for workload, fatigue, ease of use, comfort, satisfaction, and
+preference.
+Ten participants tested all six methods in a fixed order. The results showed clear
+differences in typing speed, accuracy, workload, and user ratings. Each method had its
+own strengths and limits. The main contribution of this project is the development of a
+working VR typing application that includes six input methods in one shared test and
+data-recording system. By using the same test conditions for all methods, the
+application provides a common platform for comparing VR text-entry methods.
+
+===== PDF PAGE 4 =====
+
+iv
+Acknowledgements
+I wish to sincerely thank my supervisor, Rafael Kuffner Dos Anjos, for his guidance and
+advice throughout this project. I thank the ten participants who gave their time to take
+part in the user study. I also thank my family and friends for their support during my
+MSc studies.
+
+===== PDF PAGE 5 =====
+
+Contents
+1 Introduction 2
+1.1 Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 2
+1.1.1 Virtual Reality and Its Applications . . . . . . . . . . . . . . . . . . 2
+1.1.2 Text Entry in Virtual Reality . . . . . . . . . . . . . . . . . . . . . 2
+1.2 Problem Statement . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 3
+1.2.1 Existing VR Text-Entry Solutions . . . . . . . . . . . . . . . . . . . 3
+1.2.2 Existing Problems and Limitations . . . . . . . . . . . . . . . . . . 4
+1.3 Project Aim . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 5
+1.4 Objectives . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6
+1.5 Deliverables . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6
+1.6 Ethical, Legal and Social Issues . . . . . . . . . . . . . . . . . . . . . . . . 7
+1.7 Dissertation Structure . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+2 Background Research 8
+2.1 Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+2.2 Existing VR Text-Entry Techniques . . . . . . . . . . . . . . . . . . . . . . 8
+2.2.1 Controller-Based Text Entry . . . . . . . . . . . . . . . . . . . . . . 8
+2.2.2 Hand-Tracked Text Entry . . . . . . . . . . . . . . . . . . . . . . . 9
+2.2.3 Swipe and Word-Gesture Typing . . . . . . . . . . . . . . . . . . . 10
+2.2.4 Other VR Text-Entry Approaches . . . . . . . . . . . . . . . . . . . 11
+2.3 Challenges and Comparative Analysis . . . . . . . . . . . . . . . . . . . . . 12
+2.3.1 Text-Entry Speed, Accuracy and Correction . . . . . . . . . . . . . 12
+2.3.2 Feedback, Tracking and Physical Demand . . . . . . . . . . . . . . 13
+2.3.3 Limitations of Existing Comparisons . . . . . . . . . . . . . . . . . 14
+2.4 Swipe Recognition Methods . . . . . . . . . . . . . . . . . . . . . . . . . . 15
+2.4.1 Trajectory Processing and Matching . . . . . . . . . . . . . . . . . 15
+2.4.2 Candidate Generation and Ranking . . . . . . . . . . . . . . . . . . 16
+2.5 Evaluation Methods for VR Text Entry . . . . . . . . . . . . . . . . . . . . 16
+2.5.1 Objective Performance Measures . . . . . . . . . . . . . . . . . . . 16
+2.5.2 Workload, Fatigue and User Experience . . . . . . . . . . . . . . . . 17
+2.5.3 Experimental Evaluation Design and Phrase Sets . . . . . . . . . . 17
+2.6 Research Gap and Project Positioning . . . . . . . . . . . . . . . . . . . . 17
+2.7 Choice of Methods . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 18
+2.8 Chapter Summary . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 18
+v
+
+===== PDF PAGE 6 =====
+
+viCONTENTS
+3 Data Collection and Experimental Design 19
+3.1 Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 19
+3.2 Data Sources and Measures . . . . . . . . . . . . . . . . . . . . . . . . . . 19
+3.2.1 Application Data . . . . . . . . . . . . . . . . . . . . . . . . . . . . 19
+3.2.2 Questionnaire Data . . . . . . . . . . . . . . . . . . . . . . . . . . . 20
+3.2.3 Derived Measures and Dataset Limits . . . . . . . . . . . . . . . . . 20
+3.3 Data Collection System . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 21
+3.3.1 System Requirements . . . . . . . . . . . . . . . . . . . . . . . . . . 21
+3.3.2 Overall System Design . . . . . . . . . . . . . . . . . . . . . . . . . 22
+3.3.3 Shared Keyboard and Interface . . . . . . . . . . . . . . . . . . . . 22
+3.3.4 Text-Entry Methods . . . . . . . . . . . . . . . . . . . . . . . . . . 23
+3.3.5 Swipe Recognition and Candidate Selection . . . . . . . . . . . . . 23
+3.3.6 Trial Workflow and Data Export . . . . . . . . . . . . . . . . . . . 24
+3.4 Experimental Design . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+3.4.1 Research Questions . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+3.4.2 Participants . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+3.4.3 Controlled Task Settings . . . . . . . . . . . . . . . . . . . . . . . . 25
+3.4.4 Phrase Set and Text-Entry Task . . . . . . . . . . . . . . . . . . . . 26
+3.4.5 Experimental Procedure . . . . . . . . . . . . . . . . . . . . . . . . 26
+3.4.6 Fixed Method Order and Operational Safeguards . . . . . . . . . . 27
+3.4.7 Data Analysis . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 27
+3.5 Chapter Summary . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 28
+4 Software Implementation 29
+4.1 Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 29
+4.2 Development Environment and Software Structure . . . . . . . . . . . . . . 29
+4.2.1 Development Environment . . . . . . . . . . . . . . . . . . . . . . . 29
+4.2.2 Main Software Components . . . . . . . . . . . . . . . . . . . . . . 29
+4.3 Virtual Keyboard Implementation . . . . . . . . . . . . . . . . . . . . . . . 30
+4.3.1 Key Objects and Contact Probes . . . . . . . . . . . . . . . . . . . 30
+4.3.2 Shared Text Composition . . . . . . . . . . . . . . . . . . . . . . . 31
+4.3.3 Keyboard Position Adjustment . . . . . . . . . . . . . . . . . . . . 31
+4.4 Implementation of the Six Input Methods . . . . . . . . . . . . . . . . . . 31
+4.4.1 Controller ray selection with trigger confirmation (Press) . . . . . . 31
+4.4.2 Controller-based swipe typing (Swipe) . . . . . . . . . . . . . . . . 32
+4.4.3 Direct controller tapping (StickTap) . . . . . . . . . . . . . . . . . . 32
+4.4.4 Controller ray selection with dwell confirmation (Dwell) . . . . . . . 33
+4.4.5 Two-Finger and Ten-Finger Hand-Tracked Typing (HandTouch and
+HandTouch10) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 33
+4.5 Swipe Recognition and Candidate Interface . . . . . . . . . . . . . . . . . . 34
+
+===== PDF PAGE 7 =====
+
+CONTENTSvii
+4.5.1 Gesture Capture . . . . . . . . . . . . . . . . . . . . . . . . . . . . 34
+4.5.2 Keyboard Model and Preprocessing . . . . . . . . . . . . . . . . . . 34
+4.5.3 Candidate Generation and Coarse Filtering . . . . . . . . . . . . . . 35
+4.5.4 Trajectory Matching and Final Scoring . . . . . . . . . . . . . . . . 36
+4.5.5 Candidate Selection . . . . . . . . . . . . . . . . . . . . . . . . . . . 42
+4.6 Experimental Workflow Implementation . . . . . . . . . . . . . . . . . . . 43
+4.6.1 Interface States . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 43
+4.6.2 Practice and Formal Trials . . . . . . . . . . . . . . . . . . . . . . . 43
+4.6.3 Result Display and Method Progress . . . . . . . . . . . . . . . . . 43
+4.7 Measurement and Data Export . . . . . . . . . . . . . . . . . . . . . . . . 44
+4.7.1 Physical Action Recording . . . . . . . . . . . . . . . . . . . . . . . 44
+4.7.2 Sentence and Trial Metrics . . . . . . . . . . . . . . . . . . . . . . . 44
+4.7.3 CSV Output and Participant IDs . . . . . . . . . . . . . . . . . . . 44
+4.8 Chapter Summary . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 45
+5 Testing and Evaluation 46
+5.1 Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 46
+5.2 Evaluation Dataset and Data Integrity . . . . . . . . . . . . . . . . . . . . 46
+5.3 Participant Characteristics . . . . . . . . . . . . . . . . . . . . . . . . . . . 46
+5.4 Objective Performance Results . . . . . . . . . . . . . . . . . . . . . . . . . 47
+5.4.1 Text-Entry Speed . . . . . . . . . . . . . . . . . . . . . . . . . . . . 47
+5.4.2 Accuracy and Sentence Completion . . . . . . . . . . . . . . . . . . 47
+5.4.3 Correction Behaviour and Recorded Actions . . . . . . . . . . . . . 48
+5.5 Workload and Post-Method Experience . . . . . . . . . . . . . . . . . . . . 49
+5.5.1 Raw NASA–TLX . . . . . . . . . . . . . . . . . . . . . . . . . . . . 49
+5.5.2 Ease, Fatigue, Perceived Performance, Comfort and Satisfaction . . 50
+5.6 Swipe Recognition and Candidate Selection . . . . . . . . . . . . . . . . . 51
+5.7 Overall Preference and Qualitative Feedback . . . . . . . . . . . . . . . . . 52
+5.8 Integrated Discussion . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 52
+5.9 Chapter Summary . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 54
+6 Conclusions and Future Work 55
+6.1 Conclusions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 55
+6.2 Future Work . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 55
+References 57
+Appendices 61
+A User Testing Documents 62
+A.1 Participant Information Sheet . . . . . . . . . . . . . . . . . . . . . . . . . 62
+
+===== PDF PAGE 8 =====
+
+CONTENTS1
+A.2 Consent Form . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 64
+A.3 Pre-Experiment Questionnaire . . . . . . . . . . . . . . . . . . . . . . . . . 65
+A.4 Post-Method Questionnaire . . . . . . . . . . . . . . . . . . . . . . . . . . 66
+A.5 Swipe-Typing Supplementary Questions . . . . . . . . . . . . . . . . . . . 68
+A.6 Final Method-Comparison Questionnaire . . . . . . . . . . . . . . . . . . . 69
+B Ethical Issues Addressed 71
+C External Materials 72
+
+===== PDF PAGE 9 =====
+
+Chapter 1
+Introduction
+1.1 Introduction
+1.1.1 Virtual Reality and Its Applications
+Virtual reality, commonly abbreviated as VR, refers to a computer-generated
+environment in which users can perceive and interact with simulated content through
+devices such as head-mounted displays, motion controllers, and tracking sensors. Unlike
+Augmented Reality, which overlays digital information onto the physical environment,
+VR generally immerses users within a fully simulated environment.
+Modern immersive VR systems combine head-mounted displays, motion tracking and
+interactive input devices. Display resolution, refresh rate, field of view, tracking quality
+and ergonomic interaction are important technical factors in the effective and safe use of
+VR HMDs in research [15]. VR has expanded beyond entertainment into education and
+professional training, including healthcare and other simulation-based domains [28].
+As VR applications become more advanced, users need to complete a wider range of
+tasks within virtual environments, such as selecting menus, interacting with objects,
+finding information, communicating, and entering text. Among these tasks, text entry
+remains challenging because its efficiency and accuracy can be affected by the type of
+feedback provided to users[31].
+1.1.2 Text Entry in Virtual Reality
+Text entry is a fundamental component of human–computer interaction. Users may
+need to enter search terms, passwords, messages, commands, form responses, or longer
+pieces of written content. In conventional desktop environments, these tasks are
+commonly performed using a physical keyboard. However, physical keyboards are not
+always suitable for VR environments because a head-mounted display may prevent users
+from directly viewing their hands and the keyboard. Physical keyboards also require
+additional hardware and a supporting surface, potentially restricting users’ movement
+within the virtual environment.
+Virtual keyboards provide an alternative by presenting a keyboard layout directly within
+the virtual environment. The familiar QWERTY layout allows users to leverage the
+typing experience and skills they have acquired from using physical and touchscreen
+2
+
+===== PDF PAGE 10 =====
+
+1.2. PROBLEM STATEMENT3
+keyboards. Mid-air virtual keyboards do not provide the physical key boundaries or
+passive haptic feedback available with conventional keyboards. Their performance may
+also be affected by unconstrained hand movement, tracking inaccuracies, latency, and
+limited finger visibility, which can reduce the precision of users’ input [11].
+Consequently, a range of interaction methods has been developed for virtual keyboards,
+including controller-based pointing, dwell selection, direct tapping, hand-tracked input,
+and continuous swipe gestures.
+1.2 Problem Statement
+A range of text-entry solutions has been developed for virtual reality, including physical
+keyboards, controller-based virtual keyboards, dwell-based selection, direct tapping,
+hand-tracked input, gesture typing, eye gaze, and speech recognition. These methods
+differ in the hardware they require, the way users select characters and whether text is
+entered at character or word level. This section focuses primarily on virtual QWERTY
+keyboard methods that are directly related to the six techniques implemented in this
+project.
+1.2.1 Existing VR Text-Entry Solutions
+Controller-based pointing is a common approach to VR text entry. A tracked handheld
+controller projects a virtual ray towards the keyboard, allowing the user to highlight a
+key and confirm the selection by pressing a trigger or button. A related approach is
+dwell-based selection, in which a character is entered automatically after the pointer
+remains over a key for a predefined period. Dwell selection removes the need for
+repeated button presses but introduces a fixed delay for each character. Controllers can
+also be used for direct interaction, where the user moves the controller towards the
+keyboard and taps individual virtual keys. These approaches provide different balances
+between interaction distance, confirmation effort, and physical movement. Hand-tracked
+input removes the need for handheld controllers by using cameras on the VR headset to
+estimate the positions and movements of the user’s hands and fingers. Characters may
+be selected through fingertip contact, pinching, or direct mid-air tapping. Hand tracking
+allows users to interact with virtual keyboards through visible representations of their
+own hands and to adapt familiar QWERTY typing behaviours to immersive
+environments. However, mid-air input lacks passive haptic feedback and may be affected
+by tracking inaccuracies, limited hand visibility, and the design of the selection
+mechanism[11][2].
+Differences have also been observed between controller-based and hand-tracked input.
+Akhoroz and Yildirim[3] compared hand-tracked poke typing with controller-based input
+
+===== PDF PAGE 11 =====
+
+4CHAPTER 1. INTRODUCTION
+under different virtual-key representations. The performance of hand-tracked input may
+also vary according to the interaction mechanism used. Dudley et al. [11] compared
+Poke and Raycast as two interaction mechanisms for hand-tracked word-gesture typing.
+They found that Poke interaction achieved a significantly higher text-entry rate than
+Raycast interaction, indicating that performance can vary even when both techniques
+rely on the same hand-tracking technology.
+Swipe or word-gesture typing provides an alternative to selecting each character
+separately. The user moves a controller or finger continuously across the approximate
+locations of the letters in a word. A recognition algorithm then interprets the recorded
+trajectory and predicts the intended word, often presenting several candidate words for
+selection. This approach may reduce the number of discrete actions required for text
+entry, but its performance depends on trajectory processing, word prediction, and the
+design of the correction interface. In a separate comparison, Dudley et al. [11] found
+that two-finger touch typing achieved a higher average entry rate than gesture typing,
+although participants’ preferences were divided between the two techniques.
+Other solutions, including tracked physical keyboards, gaze-based keyboards,
+head-directed input, handwriting, and speech recognition, have also been investigated.
+However, these techniques involve different hardware requirements and interaction
+principles. Since the present project examines manual interaction with a virtual
+QWERTY keyboard in fully immersive VR, they are not included in the experimental
+comparison.
+1.2.2 Existing Problems and Limitations
+Despite the range of VR text-entry techniques proposed in previous research, their
+reported results are often difficult to compare directly. Existing studies vary in the
+headsets and tracking systems used, keyboard layouts and dimensions, phrase sets,
+training procedures, and evaluation metrics. Accuracy is particularly difficult to
+compare because studies may report total, corrected, or uncorrected error rates, or use
+different character- and word-level measures. After analysing 176 XR text-entry
+techniques, Bhatia et al. [4] identified considerable variation in the performance metrics
+reported across previous studies, including the use of different error-rate measures. This
+variation makes direct comparison and benchmarking between techniques more difficult.
+Consequently, reported differences in performance may reflect both the input techniques
+and variations in experimental design.
+Virtual keyboards also present interaction challenges that are not encountered to the
+same extent with physical keyboards. Mid-air keyboards lack fixed key boundaries,
+passive haptic feedback and a surface on which users can rest their hands. Hand-tracked
+input may additionally be affected by finger occlusion, tracking inaccuracies and
+
+===== PDF PAGE 12 =====
+
+1.3. PROJECT AIM5
+unconstrained finger movement, while controller-based methods require repeated aiming,
+confirmation or larger arm movements. These factors can influence typing speed,
+accuracy, workload and user experience. Therefore, practical performance should be
+assessed using both objective and subjective measures rather than Words Per Minute
+(WPM) and final error rate alone[11][9].
+Different confirmation mechanisms introduce further trade-offs. Trigger-based selection
+provides clear user control but requires repeated button presses. Dwell-based selection
+removes the need for physical confirmation but introduces a fixed delay for each
+character. Direct tapping may feel more spatially natural, although collision detection
+can result in missed, repeated or unintended key activations. Swipe typing introduces an
+additional dependence on software recognition because similar trajectories may
+correspond to multiple words. Its performance therefore depends on trajectory
+processing, dictionary coverage, word-frequency information, candidate ranking and the
+design of the correction interface.
+Previous studies have generally examined only selected parts of this wider design space,
+such as controller-based selection, one- or two-finger hand input, or comparisons
+between tapping and word-gesture typing. Bhatia et al.[4] also showed that XR
+text-entry techniques vary widely in their interaction characteristics and evaluation
+approaches. Although these studies provide valuable evidence, differences between their
+systems make it difficult to isolate the effects of input device, confirmation mechanism,
+interaction distance, and number of active fingers.
+The present project addresses this limitation by implementing six text-entry methods
+within the same Unity VR application: controller ray selection with trigger
+confirmation, controller ray selection with dwell confirmation, controller-based swipe
+typing, direct controller tapping, two-index-finger hand-tracked typing, and ten-finger
+hand-tracked typing. All methods use the same virtual QWERTY keyboard, phrase set,
+timing procedure, and evaluation framework, allowing them to be compared under more
+consistent experimental conditions.
+1.3 Project Aim
+The aim of this project is to design, implement and evaluate six virtual QWERTY
+text-entry methods within a shared immersive VR application. The methods, presented
+in their experimental order, are controller ray selection with trigger confirmation
+(Press), controller-based swipe typing (Swipe), direct controller tapping (StickTap),
+controller ray selection with dwell confirmation (Dwell), two-index-finger hand-tracked
+typing (HandTouch) and ten-finger hand-tracked typing (HandTouch10).
+The study compares the methods in terms of text-entry speed, attempted-prefix
+
+===== PDF PAGE 13 =====
+
+6CHAPTER 1. INTRODUCTION
+accuracy, correction behaviour, physical actions, workload, physical fatigue, usability
+and user preference. The shared application reduces variation in the keyboard layout,
+phrase presentation, timing and measurement procedure, while the fixed method order
+and repeated phrase set are treated as limitations.
+1.4 Objectives
+To achieve the overall aim of the project, the following objectives were established:
+1. To review existing research on controller-based, hand-tracked and gesture-based
+text entry in virtual reality.
+2. To design a consistent virtual QWERTY keyboard and typing-test environment
+for comparing multiple text-entry methods.
+3. To develop a Unity VR application implementing controller ray selection with
+trigger confirmation, controller-based swipe typing, direct controller tapping,
+controller ray selection with dwell confirmation, two-index-finger hand-tracked
+typing and ten-finger hand-tracked typing.
+4. To implement an experimental management and data-recording system capable of
+presenting target phrases, controlling trials and recording relevant performance
+measures.
+5. To design and conduct a standardised within-subjects user study using a fixed
+method order and consistent experimental procedures, while acknowledging
+possible learning, fatigue, and order effects.
+6. To collect objective measures of text-entry performance, including typing speed,
+accuracy, correction behaviour, and input actions.
+7. To collect subjective measures of workload, physical fatigue, usability and user
+preference.
+8. To analyse the quantitative and qualitative results in order to identify the
+strengths, limitations, and potential application contexts of each text-entry
+method.
+1.5 Deliverables
+The main deliverables of this project are:
+1. A functional Unity VR application implementing six virtual QWERTY text-entry
+methods.
+
+===== PDF PAGE 14 =====
+
+1.6. ETHICAL, LEGAL AND SOCIAL ISSUES7
+2. A typing-test and data-recording system for conducting controlled user studies.
+3. An anonymised dataset containing objective performance results and subjective
+participant feedback.
+4. The source code and relevant technical documentation.
+5. The MSc project report presenting the design, implementation, evaluation, and
+conclusions of the project.
+1.6 Ethical, Legal and Social Issues
+The project involved human participants and therefore required careful consideration of
+informed consent, participant safety, privacy, and data protection. Participants were
+provided with study information before taking part and gave written consent. They
+could pause or withdraw from the study at any time.
+The use of immersive VR introduced possible risks such as fatigue, discomfort, and
+cybersickness. These risks were explained before testing, and participants could take
+breaks when required. Research data were pseudonymised and stored securely in
+accordance with the approved ethics and data-management procedures.
+The study did not collect information beyond that required for the evaluation. Further
+details of the ethical procedures are provided in Appendix B.
+1.7 Dissertation Structure
+Chapter 2 reviews existing VR text-entry techniques, evaluation methods, and the
+research gap addressed by this project. Chapter 3 describes the data collection system
+and experimental design. Chapter 4 presents the software implementation of the six
+input methods and the supporting VR application. Chapter 5 reports and discusses the
+user-study results. Chapter 6 concludes the project and outlines future work.
+
+===== PDF PAGE 15 =====
+
+Chapter 2
+Background Research
+2.1 Introduction
+This chapter reviews existing research on virtual keyboard text entry in virtual reality.
+It examines controller-based, hand-tracked and swipe-based techniques, compares their
+main performance and interaction challenges, and discusses relevant recognition and
+evaluation methods. The chapter concludes by identifying the research gap and
+explaining the methods selected for this project.
+2.2 Existing VR Text-Entry Techniques
+VR text-entry techniques can be distinguished according to the input device, the
+mechanism for selecting characters, and whether text is entered character by character
+or at word level. The following sections review controller-based, hand-tracked and
+word-gesture techniques, which are most relevant to the methods implemented in this
+project. Other approaches, including physical keyboards, head or gaze input and speech
+recognition, are also considered to establish the wider context of VR text entry.
+2.2.1 Controller-Based Text Entry
+Controller-based text entry typically uses the position and orientation of a tracked
+handheld controller to interact with a virtual keyboard. One common implementation
+projects a virtual ray from the controller towards the keyboard. The user moves the
+controller to highlight a key and presses a trigger or button to confirm the selection.
+This approach is conceptually similar to pointing and clicking with a computer mouse
+and provides users with explicit control over when each character is entered.
+Speicher et al. [26] investigated six selection-based VR text-entry methods, including
+controller pointing, controller tapping, head pointing and freehand selection. Their
+results showed that pointing with tracked handheld controllers performed better than
+the other techniques evaluated in the study. The authors attributed the effectiveness of
+controller pointing partly to the stability of tracked controllers and the familiarity of
+point-and-select interaction. However, controller pointing still requires users to
+repeatedly aim at keys and press a confirmation button, potentially increasing the
+number of physical actions required for longer text-entry tasks.
+8
+
+===== PDF PAGE 16 =====
+
+2.2. EXISTING VR TEXT-ENTRY TECHNIQUES9
+Boletsis and Kongsvik[6] compared four controller-based methods: raycasting, a
+drum-like keyboard, head-directed input and a split controller keyboard. Their study
+involved 22 participants and evaluated text-entry rate, accuracy, usability and user
+experience. Raycasting and the drum-like keyboard received relatively positive usability
+and experiential evaluations, and achieved higher text-entry rates than the head-directed
+and split-keyboard methods, suggesting that both remote pointing and direct controller
+interaction can provide viable VR text-entry solutions. Nevertheless, the methods
+required different movement patterns: raycasting involved repeated aiming, whereas the
+drum-like keyboard required users to move the controllers directly towards virtual keys.
+Dwell-based selection uses a similar pointing mechanism but removes the need to press a
+trigger or a button. A character is entered automatically after the pointer remains over
+a key for a predefined duration. Although the study by Yu et al. [32] used head-directed
+rather than controller-directed pointing, it illustrates the general trade-off associated
+with dwell confirmation. DwellType was slower than button-confirmed TapType and
+word-level GestureType because every character required a fixed waiting period. Dwell
+selection may nevertheless be useful when repeated button presses are undesirable or
+inaccessible[32].
+Controllers can also be used for direct tapping. Instead of selecting a key from a
+distance, the controller is treated as a stylus or drumstick and moved into contact with
+the virtual keyboard. Direct tapping may provide a more spatially immediate form of
+interaction than raycasting, but it also requires greater controller movement and reliable
+key-activation detection. In the study by Boletsis and Kongsvik[6], some participants
+reported that forceful tapping could cause characters to be registered twice, while the
+active use of both hands could become tiring. Controller-based methods therefore
+present different trade-offs in terms of tracking stability, confirmation effort, interaction
+distance, typing accuracy and physical movement.
+2.2.2 Hand-Tracked Text Entry
+Hand-tracked text entry removes the need for handheld controllers by using cameras or
+depth sensors to estimate the positions of the user’s hands and fingers. Virtual keys can
+be selected through fingertip contact, mid-air tapping or pinch gestures. This approach
+may provide a more direct and natural form of interaction because users operate the
+keyboard using representations of their own hands rather than an additional device.
+Adhikary and Vertanen[2] demonstrated one- and two-index-finger typing on a mid-air
+QWERTY keyboard. Their results also showed that visual keyboard information
+remained important despite participants’ familiarity with the QWERTY layout.
+The use of multiple fingers may allow users to transfer some behaviours developed
+through physical-keyboard experience. However, mid-air typing does not provide a
+
+===== PDF PAGE 17 =====
+
+10CHAPTER 2. BACKGROUND RESEARCH
+surface on which the hands can rest, fixed key boundaries or passive tactile
+confirmation. Finger movements are therefore less constrained than on a physical
+keyboard. Tracking may also become less reliable when fingers overlap, move outside the
+camera’s field of view or occlude one another.
+The number of active fingers creates an important design trade-off. Dudley et al. [10]
+compared two-index-finger and ten-finger typing under mid-air and surface-aligned
+conditions. They found that aligning the virtual keyboard with a physical surface
+significantly improved text-entry rate. Under mid-air conditions, participants did not
+use all ten fingers effectively, and ten-finger typing was slower and produced more errors
+than two-index-finger typing. These findings indicate that increasing the number of
+active fingers does not necessarily improve text-entry performance.
+Dudley et al. [11] examined probabilistic hand-based input methods on a mid-air virtual
+QWERTY keyboard. Rather than interpreting every finger position as a completely
+certain key selection, probabilistic approaches can account for spatial uncertainty and
+use language information to estimate the intended character or word. Such methods are
+relevant to hand tracking because small tracking errors or imprecise finger movements
+can displace the estimated contact point from the intended key.
+2.2.3 Swipe and Word-Gesture Typing
+Swipe typing, also known as word-gesture typing, enables users to enter an entire word
+through one continuous movement. Instead of selecting every character separately, the
+user moves a finger, controller or pointer across the approximate locations of the letters
+in the intended word. A recognition algorithm compares the recorded path with possible
+word trajectories and returns one or more candidate words.
+Word-level interaction may reduce the number of discrete selection and confirmation
+actions required for text entry. However, the output depends on software interpretation
+rather than a direct one-to-one relationship between actions and characters. Different
+words may produce similar gesture paths, while variations in movement speed, pointer
+position and tracking accuracy can cause repeated gestures for the same word to follow
+different trajectories. Swipe interfaces therefore normally require a dictionary, a
+trajectory-matching procedure, language-model information and a mechanism for
+selecting or correcting predicted words.
+Yu et al. [32] compared head-directed tapping, dwell selection and gesture typing.
+GestureType achieved a higher entry rate than both character-level techniques in the
+initial study, and participants reached a higher rate after further training and
+improvements to the recognition algorithm. This finding suggests that word-level
+gestures can increase throughput when recognition is sufficiently reliable. However, the
+study used head movements, meaning that its results cannot be directly generalised to
+
+===== PDF PAGE 18 =====
+
+2.2. EXISTING VR TEXT-ENTRY TECHNIQUES11
+controller- or hand-based swipe interaction.
+Spiess et al. [27] introduced a controller-operated word-gesture keyboard based on direct
+interaction with a virtual keyboard. Their system adapted the continuous gesture
+principle used on touchscreen keyboards to VR, allowing users to move a tracked
+controller across the keyboard to form word trajectories. The preliminary evaluation
+reported promising usability results for controller-based word-gesture input, although
+further evaluation was required to establish its performance relative to other VR
+text-entry methods.
+Kern et al.[14] subsequently compared contact-based tapping and word-gesture
+keyboards in VR and video see-through AR with 64 participants. Both keyboards were
+operated using tracked handheld controllers, and both techniques supported text
+correction, word suggestions, capitalisation and punctuation. In the VR condition, the
+tap keyboard achieved a higher entry rate than the word-gesture keyboard. It also
+received higher usability and user-experience ratings and produced a lower task load.
+Nevertheless, participants demonstrated a significant learning effect after typing only
+ten sentences in each condition. These results indicate that swipe typing does not
+necessarily outperform tapping, as its effectiveness depends on the recognition method,
+interface design, training and correction process.
+Swipe typing is particularly relevant to the present project because it differs
+fundamentally from the other methods. The trigger-based, dwell-based, direct
+controller-tapping and hand-tracked tapping methods implemented in this project
+operate primarily through discrete character selections, whereas the controller-based
+swipe method converts a continuous trajectory into a predicted word. Its evaluation
+must therefore consider not only text-entry speed and error rate, but also recognition
+accuracy, candidate selection and the cost of correcting an incorrect prediction.
+2.2.4 Other VR Text-Entry Approaches
+Beyond manual interaction with mid-air virtual keyboards, recent studies have
+investigated alternative text-entry approaches for VR environments, including
+gaze-based input and speech recognition. Bhatia et al. [4] compiled and analysed a
+database of 176 text-entry techniques across the broader field of XR, including VR, and
+highlighted variations in technique design, evaluation metrics and interaction attributes.
+Gaze and speech provide alternative methods that reduce reliance on handheld input.
+Mansour and Orlosky[19] investigated a gaze-based swipe technique in which users
+entered words by looking at virtual keys in sequence to trace a word path. Adhikary and
+Vertanen[1] found that speaking sentences and correcting recognition errors through a
+mid-air keyboard was faster and more accurate than keyboard-only input. The method
+still requires an effective mechanism for correcting recognition errors. In practical
+
+===== PDF PAGE 19 =====
+
+12CHAPTER 2. BACKGROUND RESEARCH
+settings, speech input may also be constrained by environmental noise and privacy
+concerns.
+These gaze- and speech-based approaches are outside the scope of the present study,
+which focuses on comparing controller-based selection and tapping, hand-tracked typing
+and controller-based swipe typing using the same virtual QWERTY keyboard and
+consistent experimental procedures.
+2.3 Challenges and Comparative Analysis
+VR text-entry techniques involve trade-offs among speed, accuracy, correction effort,
+physical demand and usability. Hardware, keyboard design, recognition methods,
+training and evaluation procedures also affect reported performance.
+2.3.1 Text-Entry Speed, Accuracy and Correction
+Text-entry speed is commonly reported in WPM, although results vary across interaction
+methods. Comparative studies have reported strong performance for controller pointing.
+Speicher et al.[26] found that tracked-controller pointing outperformed the other
+selection-based techniques evaluated in their study. Boletsis and Kongsvik[6] reported
+satisfactory entry rates and positive usability results for raycasting and drum-like
+controller interaction, alongside moderate error rates. Controller performance therefore
+depends on the design of the pointing and confirmation mechanisms.
+In Study 1, Yu et al. [32] reported final-session mean entry rates of 10.59 WPM for
+DwellType, 15.58 WPM for TapType, and 19.04 WPM for GestureType after six
+sessions. In Study 2, which examined GestureType with an improved recognition
+algorithm, the mean entry rate increased from 17.04 WPM in the first session to 24.73
+WPM in the eighth and final session after approximately 60 minutes of training. Session
+had no significant effect on either the word-level corrected or uncorrected error rate[32].
+Hand-tracked techniques can achieve competitive entry rates with visual feedback and
+error-tolerant decoding. Adhikary and Vertanen[2] reported approximately 16 WPM for
+one- and two-index-finger typing on a visible mid-air QWERTY keyboard, with final
+post-recognition character error rates below 2%. With an invisible keyboard providing
+minimal visual feedback, entry speed fell to approximately 11 WPM and the error rate
+increased to 3.3%. Visual guidance therefore remained important despite participants’
+familiarity with QWERTY.
+Dudley et al. [11] examined probabilistic hand-based touch and gesture typing. They
+reported typical entry rates of 20–30 WPM and average peak rates of 40–45 WPM.
+These results show the performance potential of probabilistic decoding under imprecise
+mid-air input and tracking uncertainty. Hand-tracked performance depends on both the
+
+===== PDF PAGE 20 =====
+
+2.3. CHALLENGES AND COMPARATIVE ANALYSIS13
+physical interaction and the decoder’s ability to infer the intended text. Kern et al. [14]
+compared contact-based tapping and word-gesture keyboards in VR and video
+see-through AR. In VR, tapping was faster, received higher usability and
+user-experience ratings, and produced a lower task load. Participants also showed a
+significant learning effect across the ten sentences typed in each condition. In Kern et
+al.’s implementation, word-gesture typing did not outperform tapping, although its
+performance changed after a short period of practice. Accuracy is difficult to represent
+using a single measure. Studies report different combinations of uncorrected errors,
+corrected errors, backspace use and decoder performance[4]. A low final character error
+rate may conceal substantial correction effort. An incorrect swipe prediction can be
+corrected before submission but may require candidate inspection, alternative selection,
+deletion or gesture repetition. Evaluation should distinguish final transcription accuracy
+from the frequency and cost of correction. The six methods implemented in this project
+use different confirmation and correction actions. The formal evaluation therefore
+includes Gross WPM, attempted-prefix CER, derived accuracy, backspace count,
+candidate-confirmation count and total physical actions. For Swipe, recognition quality
+and candidate-selection usability are assessed through participant ratings. Objective
+Top-1 and Top-5 recognition accuracy is reported only for the separate developer
+validation described in Section 4.5.4.
+2.3.2 Feedback, Tracking and Physical Demand
+Mid-air virtual keyboards lack fixed key boundaries, hand support and passive haptic
+feedback. Users therefore rely more heavily on visual feedback and designed haptic cues,
+which can affect spatial awareness, visual attention and typing performance.
+Dudley et al. [11] identified the lack of passive haptic feedback, unconstrained
+movement, tracking inaccuracies and observability limitations as sources of imprecise
+mid-air input. Probabilistic decoding can mitigate input noise while the underlying
+sensing constraints remain. Dudley et al. [10] also found that ten-finger mid-air typing
+was slower and produced more errors than two-index-finger typing.
+Chellali et al. [9] compared hover and keypress visual feedback across three passive
+haptic conditions. Keypress feedback increased typing speed and reduced workload,
+while hover feedback reduced errors and slowed entry. Participants spent more time
+looking at the keyboard with keypress feedback and without haptic support. Feedback
+design therefore affects typing speed, accuracy, workload and visual attention.
+Chellali et al. [9] also found that the physical-keyboard condition increased the error
+rate. The authors attributed this result to possible tracking inaccuracies and
+misalignment between the physical and virtual keyboards. The effectiveness of passive
+haptic feedback may therefore depend on calibration and tracking reliability.
+
+===== PDF PAGE 21 =====
+
+14CHAPTER 2. BACKGROUND RESEARCH
+Controller-based methods introduce different movement demands. Raycasting requires
+repeated aiming and confirmation, while direct controller tapping requires movement
+towards the keyboard. Boletsis and Kongsvik[6] reported satisfactory entry rates and
+positive usability results for raycasting and drum-like input. Some participants
+described the active two-handed movements as tiring, although tiredness was not a
+major complaint.
+Souchet et al.[25] identified visual fatigue, muscular fatigue and mental overload as
+relevant risks for prolonged workplace use of immersive VR. Text-entry evaluation
+should therefore consider posture, arm movement, exposure duration and visual
+attention alongside transcription performance.
+Objective and subjective measures capture complementary aspects of performance.
+WPM and error rates quantify text-entry output, while workload, fatigue, usability and
+preference assess its physical and cognitive cost. A small speed advantage may offer
+limited practical value when it requires greater arm movement, sustained visual
+attention or frequent correction.
+2.3.3 Limitations of Existing Comparisons
+Existing studies examine different parts of the VR text-entry design space. Speicher et
+al. [26] compared six selection-based techniques. Boletsis and Kongsvik[6] evaluated four
+controller-based methods. Adhikary and Vertanen[2] examined one- and
+two-index-finger input across different visual keyboard designs. Dudley et al. [11]
+studied probabilistic hand-based touch and gesture input. Kern et al. [14] compared
+tapping and word-gesture typing in VR and video see-through AR. These distinct scopes
+limit direct comparison across the input devices and interaction mechanisms considered
+in the present project.
+Experimental conditions also vary in the headsets and tracking technologies used,
+keyboard dimensions, interaction distances, visual feedback, correction support, phrase
+sets, training and participant characteristics. Reported performance may reflect both
+the input method and the experimental setup. Training duration and decoder support
+can also affect results. Additional practice may increase entry speed, and automatic
+decoding can improve final accuracy under imprecise input[11]. Speicher et al. [26]
+noted that methodological differences limited direct comparison of performance
+estimates from previous studies.
+Performance measures also vary across studies. Researchers may report total error rate,
+corrected errors, uncorrected errors, backspace use, workload or usability. Gesture-based
+systems may also measure recognition accuracy and candidate-selection behaviour,
+making their metric sets less comparable with character-level techniques. Bhatia et al.
+[4] documented substantial variation in the metrics used to evaluate 176 XR text-entry
+
+===== PDF PAGE 22 =====
+
+2.4. SWIPE RECOGNITION METHODS15
+techniques, highlighting the need for more consistent reporting.
+Learning effects create another source of variation. Kern et al. [14] reported a significant
+learning effect across the ten sentences typed in each condition. Yu et al. [32] reported
+that participants reached 24.73 WPM after 60 minutes of GestureType training with an
+improved recognition algorithm. Short initial evaluations may underestimate the
+potential of unfamiliar techniques. Unequal practice time can confound comparisons
+between methods.
+These methodological differences limit attempts to isolate the effects of input device,
+confirmation mechanism, interaction distance and number of active fingers. The present
+study uses a single application, keyboard layout, phrase set, training procedure and
+evaluation framework to support a controlled comparison.
+2.4 Swipe Recognition Methods
+Swipe typing uses a continuous movement trajectory to infer the intended word. The
+recorded gesture provides no one-to-one record of selected keys and may vary with
+movement speed, tracking noise and typing behaviour. Recognition systems therefore
+process the trajectory, generate word predictions and rank likely candidates.
+2.4.1 Trajectory Processing and Matching
+A swipe gesture can be represented as a sequence of two- or three-dimensional points
+recorded as the user moves across a virtual keyboard. In VR, trajectory patterns vary
+with interaction mode, keyboard size, visual feedback, user behaviour and tracking
+noise. Decoders therefore transform the recorded data before prediction.
+Shen et al.[23] developed a neural decoder for an optical see-through AR headset that
+translated three-dimensional fingertip trajectories directly into text. Feature engineering
+and data augmentation supported decoding under variable mid-air input and limited
+training data. Gesture2Text later transformed continuous trajectories into coarsely
+discretised spatial representations and pre-trained a neural decoder that generalised
+across mid-air and on-surface word-gesture keyboards in AR and VR[24].
+Two common approaches are template matching and neural decoding.
+Template-matching methods are easy to configure but susceptible to noisy trajectories.
+Conventional neural decoders can improve prediction accuracy but require suitable
+training data and deep-learning expertise[24].
+
+===== PDF PAGE 23 =====
+
+16CHAPTER 2. BACKGROUND RESEARCH
+2.4.2 Candidate Generation and Ranking
+After trajectory processing, the decoder estimates the intended word. Similar words
+may produce similar paths, creating uncertainty among candidate predictions.
+Probabilistic methods can combine uncertain spatial observations with linguistic
+information to support error-tolerant decoding[11].
+A predefined vocabulary can reduce the search space before ranking. Candidate scores
+may combine trajectory, spatial and contextual evidence. In the AR-focused
+RingGesture system, score fusion combined a word-gesture decoder, a spatial
+spelling-correction model and a lightweight contextual language model to rank
+predictions[22]. Gesture2Text reported Top-1 and Top-4 prediction accuracy for its
+pre-trained decoder[24].
+The highest-ranked word may be accepted as the default prediction, with alternatives
+provided for correction. Top-1 and Top-k accuracy measure decoder performance.
+Candidate-selection frequency and correction actions capture the effort required to
+resolve inaccurate predictions. Chapter 4 describes the trajectory-processing and
+candidate-ranking methods implemented in this project.
+2.5 Evaluation Methods for VR Text Entry
+VR text-entry evaluation combines objective measures of speed and accuracy with
+subjective measures of workload and user experience. Training, condition order and
+phrase selection also require control.
+2.5.1 Objective Performance Measures
+WPM measures text-entry speed. Character error rate (CER) and word error rate
+(WER) quantify differences between the target and submitted text. Recent studies have
+used WPM and error-based measures to evaluate hand-tracked, tapping and
+word-gesture techniques[2][11][14].
+Final accuracy does not capture corrections made before submission. Shen et al. [23]
+reported uncorrected and corrected CER to distinguish the predicted text before
+correction from the text submitted after user correction. Backspace count, correction
+actions and total input actions can provide additional measures of correction effort.
+Swipe decoders can also be evaluated using recognition-specific measures. Gesture2Text
+reported Top-1 and Top-4 prediction accuracy[24]. Candidate-selection frequency and
+gesture re-entry can capture the interaction cost of incorrect predictions.
+
+===== PDF PAGE 24 =====
+
+2.6. RESEARCH GAP AND PROJECT POSITIONING17
+2.5.2 Workload, Fatigue and User Experience
+Subjective measures capture demands that are not reflected in typing speed and
+accuracy. A fast technique may still require substantial mental effort, physical
+movement or visual attention.
+Wang et al. [29] found that Trace was more efficient but produced greater frustration
+and cognitive workload. However, among participants familiar with VR, the frustration
+and cognitive-load levels associated with Trace were reduced to approximately the same
+level as those associated with Tap.
+These studies support combining workload, perceived physical exertion, usability and
+user-experience measures with objective performance. The present study also measures
+physical fatigue and user preference to assess the practical demands of each method.
+2.5.3 Experimental Evaluation Design and Phrase Sets
+Comparative VR text-entry studies often use input method as a within-subject factor,
+allowing each participant to test every method. Counterbalancing controls order effects,
+and equal practice reduces differences in familiarity.
+Wang et al. [29] randomly selected separate practice and experimental phrases from the
+MacKenzie and Soukoreff phrase set for each method and participant. They balanced
+the method order using a Latin square design. Kern et al. [14] selected ten sentences of
+similar length, randomised their presentation order and counterbalanced the tap and
+swipe conditions. Kern et al. [14] also reported a significant learning effect across the
+ten sentences per condition, showing the importance of consistent practice and clear
+reporting of training procedures. The present study uses a fixed method order for
+operational reasons. The input method and its sequence position are therefore
+confounded. This limits causal comparison between methods.
+Keyboard dimensions, target-text presentation, timing rules and correction functions
+should remain consistent unless they are experimental variables. Phrase sets should be
+matched for length and difficulty. Pilot testing can confirm suitable task durations,
+practice periods and rest intervals.
+2.6 Research Gap and Project Positioning
+Recent studies have evaluated controller-based, hand-tracked and word-gesture
+text-entry techniques in immersive environments[11][14]. Cross-study comparison
+remains difficult because devices, keyboard designs, training procedures, phrase sets and
+evaluation measures vary. Reported differences may therefore reflect both the input
+technique and the experimental design[4].
+
+===== PDF PAGE 25 =====
+
+18CHAPTER 2. BACKGROUND RESEARCH
+Previous studies have examined separate components of immersive text entry, including
+tapping and word-gesture input[14], probabilistic hand-based input[11],
+three-dimensional trajectory decoding[23] and feedback design[9]. Evidence comparing
+these factors within one experimental framework remains limited.
+The present project responds to this gap through a shared-platform within-subjects
+comparison of six input methods implemented on the same virtual keyboard. The design
+standardises the application, layout, phrase presentation and measurement procedure.
+2.7 Choice of Methods
+This project compares six VR text-entry methods within the same Unity application:
+controller ray selection with trigger confirmation, controller-based swipe typing, direct
+controller tapping, controller ray selection with dwell confirmation, two-index-finger
+hand-tracked typing and ten-finger hand-tracked typing. These methods were selected to
+represent a range of input modalities and interaction designs, including controller-based
+and hand-tracked input, remote and direct interaction, different confirmation
+mechanisms, and, for the hand-tracked conditions, different numbers of active fingers.
+All conditions use the same virtual QWERTY layout, target-phrase presentation, timing
+procedure, and visual design. Method-specific feedback is provided where required by
+each interaction technique. The study employs a within-subjects design, with all
+participants completing the conditions in a fixed order. Practice trials are provided
+before each condition to familiarise participants with the corresponding interaction
+technique. Although the within-subjects design reduces the influence of individual
+differences, the fixed condition order may introduce learning, fatigue, and order effects;
+this is therefore acknowledged as a limitation of the study.
+The evaluation measures typing speed, attempted-prefix accuracy, correction behaviour,
+physical actions, workload, physical fatigue, usability and user preference. For
+controller-based Swipe typing, the formal user study additionally evaluates perceived
+recognition quality and candidate-selection usability through participant ratings.
+2.8 Chapter Summary
+This chapter reviewed controller-based, hand-tracked and swipe-based VR text-entry
+techniques, focusing on speed, accuracy, correction effort, feedback, tracking and physical
+demand. It also examined swipe-recognition approaches and evaluation methods. The
+review identified limited comparability across existing studies and informed the selection
+of six input methods for controlled evaluation within a single Unity VR application.
+
+===== PDF PAGE 26 =====
+
+Chapter 3
+Data Collection and Experimental De-
+sign
+3.1 Introduction
+This chapter describes the data sources, collection system and study protocol used in
+the project. The study compares six VR text-entry methods in one Unity application
+and records performance, workload and preference data. The chapter first defines the
+measures, then explains the system and input methods, and finally presents the
+experimental design, analysis.
+3.2 Data Sources and Measures
+The project uses application logs and questionnaire responses. A pseudonymous
+participant ID links both sources. Table 3.1 lists the data used in the comparison.
+Table 3.1: Data sources and measures used in the study.
+Data source Measures
+Pre-experiment question-
+naire
+Participant characteristics and previous typing, swipe and VR
+experience.
+trial_results.csv Method, practice state, duration, Gross WPM, project-specific
+Effective WPM, attempted-prefix CER, derived accuracy,
+recorded sentence count, action counts and trial validity.
+sentence_results.csv Target text, entered text, comparison-target character count,
+attempted-prefix CER, derived accuracy, Levenshtein distance,
+correction counts and completion state.
+Post-method questionnaire Raw NASA-TLX, ease, fatigue, perceived speed, perceived ac-
+curacy, comfort, satisfaction and comments.
+Swipe questionnaire Perceived candidate accuracy, list coverage, selection ease, pre-
+dictability and usefulness.
+Final questionnaire Method ranks, single-choice preferences and open comments.
+3.2.1 Application Data
+Unity writes a trial summary totrial_results.csvwhen a trial ends. It also writes
+one sentence row for each attempted sentence. The application stores pseudonymous
+19
+
+===== PDF PAGE 27 =====
+
+20CHAPTER 3. DATA COLLECTION AND EXPERIMENTAL DESIGN
+participant IDs in these local CSV files. SessionId, TrialId and ParticipantId link these
+records. The current schema stores local timestamps, practice state and the selected
+method. It also stores duration, character counts, Levenshtein distance,
+attempted-prefix CER, derived accuracy, Gross WPM and the project-specific Effective
+WPM measure. Further fields cover sentence completion, corrections, physical actions,
+trial validity and the invalidity reason.
+3.2.2 Questionnaire Data
+The pre-experiment questionnaire records participant background. Each method is
+followed by the six Raw NASA-TLX items, which assess Mental Demand, Physical
+Demand, Temporal Demand, Performance, Effort and Frustration. The unweighted
+overall score is calculated as the arithmetic mean of the six ratings, as defined in Section
+3.4.7. The Swipe condition adds questions about recognition and candidate selection. A
+final questionnaire records overall preference.
+Open comments capture problems and positive experiences that fixed-response items
+may miss. Questionnaires use the same pseudonymous participant ID as the Unity files
+and do not record participant names. All study records are transferred to secure
+University storage.
+3.2.3 Derived Measures and Dataset Limits
+For Press, StickTap, Dwell, HandTouch and HandTouch10, timing starts when the first
+valid key is activated. For Swipe, timing starts when the trigger is held and the probe
+first touches a valid key, which starts the swipe trajectory. Text-entry speed is
+commonly reported using a five-character word unit [18]. In the present implementation,
+Gross WPM is calculated from the final transcription lengthCand the elapsed timet:
+Gross WPM= C/5
+t/60 = 12C
+t (3.1)
+Here,Cis the total number of characters entered during the trial, including spaces and
+punctuation. It includes characters from completed sentences and any entered part of
+the current sentence.tis the elapsed time in seconds.
+This study also reports a project-specific error-adjusted WPM measure, stored as
+EffectiveWPM in the exported CSV:
+Effective WPM=Gross WPM×max(0,1−CER attempted)(3.2)
+This measure was defined for this project. It is reported separately from Gross WPM
+and should not be treated as a standard text-entry metric.
+
+===== PDF PAGE 28 =====
+
+3.3. DATA COLLECTION SYSTEM21
+Accuracy is calculated only for text attempted during the 120-second trial. LetSbe the
+full target sentence andPbe the entered text. LetSa be the comparison target. For a
+completed sentence,S a is the full target sentence. If the timer expires during a sentence,
+Sa is the target prefix with the same number of characters asP. Levenshtein distance,
+denoted byLD(S a, P), is the minimum number of single-character insertions, deletions
+and substitutions required to transform the comparison targetSa into the entered text
+P, with each operation assigned a cost of one. The attempted-prefix CER is:
+CERattempted = LD(Sa, P)
+|Sa| (3.3)
+If the entered text is longer than the full target, the full target is used and the
+additional characters are counted as insertion errors.
+Accuracy is derived from the attempted-prefix CER:
+Accuracy(%) = max(0,1−CER attempted)×100(3.4)
+A sentence that has not been started when the timer expires is excluded from the
+sentence-level and trial-level accuracy calculations. If the timer expires during a
+sentence, the entered part is included and the unattempted suffix is excluded. Trial-level
+attempted-prefix CER is calculated by dividing the total Levenshtein distance by the
+total number of comparison-target characters across all recorded sentences.The lower
+bound prevents negative accuracy values.
+BackspaceActionCount records deletion actions. PhysicalActionCount combines key
+actions, swipe gestures and controller candidate confirmations.
+The formal-user-study exporter does not store raw hand or controller paths, movement
+distance, candidate ranks, repeated-gesture links or word error rate. It also does not
+store objective Top-1 or Top-5 recognition results for participant trials. Swipe
+recognition in the user study is therefore evaluated through participant ratings and
+candidate-confirmation actions. A separate developer validation reports objective Top-1
+and Top-5 results for the fixed study vocabulary in Section 4.5.4. Legacy pilot files use
+an older schema and must be archived before formal data collection.
+3.3 Data Collection System
+3.3.1 System Requirements
+The system must support six input methods on one virtual QWERTY keyboard. All
+methods must share the target display, transcription field, correction keys and trial
+timing. The interface must show clear targeting and activation feedback.
+
+===== PDF PAGE 29 =====
+
+22CHAPTER 3. DATA COLLECTION AND EXPERIMENTAL DESIGN
+The application must remain stable and responsive during a trial. Text and status
+information must remain readable in the headset. Contact methods must block repeated
+input during continuous contact. Each method must recover safely after tracking loss.
+3.3.2 Overall System Design
+The design separates device input, method interaction, text composition, trial control
+and logging. OpenXR and XR Hands supply controller and hand-tracking data. The
+mode selector activates one input module. Confirmed characters or words pass to the
+shared text composer.
+InstructionCanvasController manages study screens. TypingTestSession controls
+phrases, practice state and timing. ResultOutput appends trial and sentence records to
+CSV files. Figure 3.1 shows the main data flow.
+VR controllers and XR hand tracking
+↓
+Input-mode selector
+↓
+Press | Swipe | StickTap | Dwell | HandTouch | HandTouch10
+↓
+Shared keyboard and text composer
+↓
+Instructions, phrase control, practice state and 120-second timer
+↓
+ResultOutput→trial_results.csvandsentence_results.csv
+Figure 3.1: Main components and data flow in the VR data collection system.
+3.3.3 Shared Keyboard and Interface
+Each method uses the same virtual QWERTY keyboard. It includes letters, numbers,
+punctuation, Space, Backspace, Enter, Shift and Caps Lock. The study panel shows the
+target, current transcription, remaining time, participant ID, selected method and trial
+state.
+Key movement and colour-coded text give immediate feedback. Letter labels change
+after Shift or Caps Lock. Extra cues include dwell progress, ray markers, controller
+probes, fingertip probes, swipe-path letters and a candidate list.Figure 3.2 shows the
+shared virtual keyboard and interface used in all six conditions.
+
+===== PDF PAGE 30 =====
+
+3.3. DATA COLLECTION SYSTEM23
+Figure 3.2: Shared Keyboard and Interface
+3.3.4 Text-Entry Methods
+The data collection system supported four controller-based and two hand-tracked
+text-entry methods. The controller-based methods were controller ray selection with
+trigger confirmation (Press), controller-based swipe typing (Swipe), direct controller
+tapping (StickTap), and controller ray selection with dwell confirmation (Dwell). The
+hand-tracked methods were two-index-finger hand-tracked typing (HandTouch) and
+ten-finger hand-tracked typing (HandTouch10). These method labels are used
+throughout the remainder of this dissertation.
+All methods used the same virtual QWERTY keyboard and task interface but differed
+in input source, targeting mechanism, confirmation action and number of active input
+points. Table 3.2 summarises these operational differences.
+In the Swipe condition, a brief trigger press entered a single character, holding the
+trigger initiated a word-level swipe gesture. Releasing the trigger completed the gesture
+and displayed up to five candidate words.
+3.3.5 Swipe Recognition and Candidate Selection
+The recogniser projects each controller path onto the keyboard plane. It removes close
+or isolated samples and smooths the remaining path. The path is resampled to 64
+points, scaled and centred.
+The recogniser supports a maximum vocabulary of 20,000 words, while the current asset
+contains 10,001 entries. A smaller vocabulary was retained to avoid unnecessary
+vocabulary-loading and template-construction overhead while preserving complete
+
+===== PDF PAGE 31 =====
+
+24CHAPTER 3. DATA COLLECTION AND EXPERIMENTAL DESIGN
+Table 3.2: Operational comparison of the six text-entry methods.
+Method Input
+source
+Entry mechanism Active input
+points
+Press Two VR
+controllers
+Point at a key with a ray and press the triggerOne ray probe per
+controller
+Swipe Two VR
+controllers
+Trace a word with the right-controller ray and
+confirm a candidate with the left controller
+One ray path
+StickTap Two VR
+controllers
+Tap keys with controller-mounted virtual sticksOne stick probe
+per controller
+Dwell Right VR
+controller
+Point at a key continuously for 0.6 seconds One ray probe
+HandTouch Optical hand
+tracking
+Touch keys directly with the fingertips Two index
+fingertips
+HandTouch10 Optical hand
+tracking
+Touch keys directly with the fingertips All ten fingertips
+coverage of the multi-letter words required by the study. The system gathers up to 2,000
+templates and fully scores a shortlist of 96 candidates. Single-letter inputs are
+committed directly without dictionary recognition.
+Ranking uses key order, dynamic time warping, endpoint distance, direction, path
+length, word frequency, movement speed and key probabilities. The five best words are
+shown. The participant confirms a candidate for every recognised swipe.
+The thumbstick moves through the list, and the trigger confirms the highlighted word.
+Number keys select a numbered item. Space or Enter accepts the first word. Backspace
+or Escape closes the list.
+3.3.6 Trial Workflow and Data Export
+TypingTestSession chooses the two-entry practice array or the eight-entry formal array.
+A change in practice state resets the trial. Timing starts with the first valid input action
+in both practice and formal trials. Valid actions include keys, corrections, modifiers,
+swipe gestures and candidate confirmations.
+A sentence ends when the transcription reaches the target length. The application
+records the sentence, clears the field and shows the next entry. The practice trial ends
+when both practice sentences are completed or when the 120-second timer expires. The
+formal trial ends after 120 seconds or when all formal entries are exhausted.
+The instruction flow contains an introduction, method guidance, a practice choice, a
+formal-ready prompt and a result screen. A completed practice trial changes the phrase
+set and waits for the researcher to continue. Formal results remain visible for five
+seconds.
+The fixed method order is Press, Swipe, StickTap, Dwell, HandTouch and HandTouch10.
+
+===== PDF PAGE 32 =====
+
+3.4. EXPERIMENTAL DESIGN25
+After each formal trial, the application proceeds to the next method in this sequence.
+Each trial produces one summary row and any completed or attempted sentence rows.
+An untouched sentence at timeout produces no sentence row.
+3.4 Experimental Design
+The study uses a within-subjects design. Every participant completes all six methods.
+The evaluation uses descriptive comparisons for a target sample of ten participants.
+3.4.1 Research Questions
+The study addresses four questions:
+1. What differences are observed in speed, accuracy and correction behaviour across
+the six methods?
+2. What differences are observed in workload, fatigue, ease, comfort and satisfaction
+across the six methods?
+3. How do participants rate swipe recognition and candidate selection?
+4. Which methods do participants prefer, and what strengths or problems do they
+report?
+3.4.2 Participants
+The target sample is ten valid participants. All participants complete the six methods in
+the same fixed order. Extra recruitment replaces withdrawn, incomplete or technically
+invalid sessions.
+Participants must be at least 18 years old and able to read English phrases. They must
+know the QWERTY layout and have normal or corrected vision. Previous VR
+experience is optional.
+The background questionnaire records dominant hand, age range and self-rated
+keyboard skill. It also records swipe use, VR use, controller-pointing experience,
+hand-tracking experience and relevant health conditions.
+3.4.3 Controlled Task Settings
+Across all six conditions, participants used the same virtual QWERTY keyboard, task
+interface, instructions, formal phrase set, phrase order and 120-second time limit. The
+keyboard was restored to a common starting position before each condition, although
+participants could subsequently adjust its position for comfort.
+
+===== PDF PAGE 33 =====
+
+26CHAPTER 3. DATA COLLECTION AND EXPERIMENTAL DESIGN
+All participants completed the methods in the same fixed order. This standardised the
+experimental procedure but introduced potential order and phrase-familiarity effects,
+which are considered study limitations.
+3.4.4 Phrase Set and Text-Entry Task
+Participants transcribe English sentences displayed on the screen. The practice array
+contains two sentences, and the formal array contains eight different sentences. The
+practice and formal sentence sets are separate and contain no overlapping sentences.
+The two practice sentences and eight formal sentences were prepared specifically for this
+project rather than taken directly from an established phrase set.
+Every method uses the same phrase order. Sentence length varies across the formal
+phrase set. Faster methods may therefore reach different sentences from slower methods
+within the 120-second limit. Repeated use of the same sentences across methods may
+also produce phrase-familiarity effects. In addition, all participants complete the
+methods in the same fixed sequence. These factors are treated as study limitations.
+Participants are instructed to enter the displayed text quickly and accurately. They can
+use Backspace to correct errors before the transcription reaches the target length. The
+application submits the sentence automatically when the transcription reaches that
+length. The practice trial ends after both practice sentences are completed or when the
+120-second timer expires. The formal trial lasts up to 120 seconds and normally ends
+when the timer expires. If all eight formal sentences are completed before this point, the
+trial ends automatically.
+3.4.5 Experimental Procedure
+Participants read the study information, give consent and complete an eligibility check.
+The researcher assigns a pseudonymous participant ID. Participants then complete the
+pre-experiment questionnaire and receive a VR orientation and safety briefing. At the
+start of each condition, the application loads the next method in the fixed sequence.
+Unity then shows the method instructions and practice prompt. The researcher selects
+Yes at the practice prompt and verifies that the participant ID, selected method and
+trial state are correct. The participant then attempts the two practice sentences for up
+to 120 seconds. After practice, Unity exports the practice data and displays the Formal
+Ready screen, the participant then completes the formal test.
+At the end of each formal trial, Unity exports the trial data and displays the results for
+five seconds. The participant then completes the post-method questionnaire and may
+take a short rest before proceeding to the next condition. After the Swipe condition, the
+participant also completes an additional questionnaire about recognition and candidate
+
+===== PDF PAGE 34 =====
+
+3.4. EXPERIMENTAL DESIGN27
+selection. Once all six conditions have been completed, the participant completes the
+final questionnaire. Figure 3.3 presents a flowchart of the complete participant
+procedure.
+Figure 3.3: Participant procedure for the six-method study
+3.4.6 Fixed Method Order and Operational Safeguards
+All participants complete the six methods in the same fixed order: Press, Swipe,
+StickTap, Dwell, HandTouch and HandTouch10. The researcher checks the participant
+ID, selected method and trial state before each condition. The keyboard pose is restored
+before each method.
+Using a fixed order simplifies the experimental procedure. Method and sequence
+position remain confounded. Learning, adaptation and fatigue may therefore affect the
+observed differences. The results cannot be attributed only to the input method.
+3.4.7 Data Analysis
+Only data collected during the formal study are included in the analysis. Practice
+records and legacy pilot files are excluded. Trials marked TrialValid = false are excluded
+after the corresponding InvalidReason has been reviewed. Sentence-level records are
+linked to their parent trials using ParticipantId, SessionId and TrialId.
+Gross WPM, Effective WPM, CER, accuracy, actions and Raw NASA-TLX are
+reported with means and standard deviations. NASA-TLX dimensions are also reported
+separately. Five-point items use medians and response frequencies.
+Method preferences are summarised using mean preference rank, first-place counts, and
+an overall rank based on the mean preference rank. Open comments are grouped by
+common topics, such as control, tracking, recognition, physical demand, comfort, and
+
+===== PDF PAGE 35 =====
+
+28CHAPTER 3. DATA COLLECTION AND EXPERIMENTAL DESIGN
+enjoyment. The comments are used to help explain the quantitative results. All findings
+describe this sample only and are not used to make claims about a wider population.
+NASA-TLX assesses workload across six dimensions: Mental Demand, Physical
+Demand, Temporal Demand, Performance, Effort and Frustration [7]. This study uses
+the unweighted Raw TLX form, which omits the pairwise weighting procedure and
+calculates the arithmetic mean of the six ratings [8]. Each score ranges from 0 to 100,
+and a higher score indicates greater perceived workload.
+Raw NASA-TLX= M D+P D+T D+P E+EF+F R
+6 (3.5)
+3.5 Chapter Summary
+This chapter defined the project data, VR collection system and six text-entry
+conditions. It also set out the participant procedure, fixed method order, measures and
+analysis.
+
+===== PDF PAGE 36 =====
+
+Chapter 4
+Software Implementation
+4.1 Introduction
+This chapter describes the Unity implementation of the VR text-entry system: the
+shared keyboard, six input methods, swipe recogniser, experimental workflow and data
+export. The implementation follows Chapter 3. Every method uses the same keyboard
+and trial interface. Method-specific components convert controller or hand input into
+shared key or word events.
+4.2 Development Environment and Software Structure
+4.2.1 Development Environment
+The application was implemented in Unity 2022.3.13f1c1 using one build scene,
+TypingScene. The scene contains the virtual keyboard, XR rig, study interface and
+data-logging components. The project uses XR Interaction Toolkit 3.1.2, OpenXR
+1.14.1 and XR Hands 1.5.1. OpenXR provides device access; XR Hands provides joint
+data for hand input. The application was deployed as an Android APK and tested on a
+Meta Quest 3 headset. The Meta Quest 3 was used for both system verification and the
+formal user study. Controller-based methods used the Quest Touch Plus controllers,
+while the HandTouch methods used the headset’s optical hand-tracking system.
+4.2.2 Main Software Components
+The software separates input handling, text composition, trial control and data storage.
+Table 4.1 summarises the main software components and their responsibilities.
+The input components convert controller or hand interactions into key or word events.
+These events are passed to a shared text-composition system, whileTypingTestSession
+manages the trial and records the resulting transcription. This structure allows all six
+input methods to use the same keyboard, transcription and evaluation pipeline.
+29
+
+===== PDF PAGE 37 =====
+
+30CHAPTER 4. SOFTW ARE IMPLEMENTATION
+Table 4.1: Main software components and their responsibilities
+Component Responsibility
+InstructionCanvasController Manages study screens, practice selection, result display
+and method progression.
+TypingTestSession Loads sentence sets, controls timing, calculates results and
+monitors the transcription.
+ResultOutput Writes sentence- and trial-level records to CSV files.
+VRKeyboardInputModeSelector Activates the selected text-entry method.
+VRKeyboardKey Detects interaction with individual virtual keys.
+VRKeyboardController Maps input events to logical keyboard keys.
+VRKeyboardTextComposer Updates the shared transcription from key or word events.
+Ray Probe Followers Support Press, Swipe and Dwell input on the shared key-
+board.
+Stick Probe Followers Support StickTap input on the shared keyboard.
+Fingertip Probe Followers Support HandTouch and HandTouch10 input on the
+shared keyboard.
+VRKeyboardSwipeInput Captures swipe gestures and handles candidate selection.
+SwipeTypingRecognizer Ranks dictionary words against each captured swipe path.
+4.3 Virtual Keyboard Implementation
+4.3.1 Key Objects and Contact Probes
+Each virtual key contains VRKeyboardKey and a trigger BoxCollider. Only objects
+with VRKeyboardPressProbe can activate it. Crossing the press threshold generates one
+event; the probe must cross the lower release threshold before another event can occur.
+This hysteresis suppresses repeated input during continuous contact. A valid press also
+moves the key cap and plays an audio cue. Figure 4.1 shows the press and release
+process. Each key converts its press depth into a normalised value between 0 and 1. A
+key input is generated when this value reaches 0.85. The key is not re-armed until the
+value falls to 0.35 or below. The difference between these thresholds creates a hysteresis
+band that prevents repeated input when the probe moves slightly near the activation
+point.
+Figure 4.1: Hysteresis-based key activation using separate press and release thresholds.
+
+===== PDF PAGE 38 =====
+
+4.4. IMPLEMENTATION OF THE SIX INPUT METHODS31
+4.3.2 Shared Text Composition
+VRKeyboardController converts each press into a character or function, records the
+physical action and forwards the result to VRKeyboardTextComposer. Letter, number
+and punctuation keys insert characters. Space inserts a space, Backspace deletes the
+final character, and Enter inserts a line break. Shift changes the case of next letter;
+Caps Lock keeps letters uppercase or lowercase until it is pressed again. Key labels
+follow the case state. Swipe sends a recognised word to the same composer, so all
+methods share one editing path.
+4.3.3 Keyboard Position Adjustment
+VRKeyboardPositionAdjuster allows participants to adjust the keyboard position at any
+time to maintain a comfortable typing posture. Hold the left grip button and use the
+thumbstick to adjust the keyboard position. Press and hold the left thumbstick, then
+move it up or down to adjust the keyboard height. Height and headset distance are
+clamped to the configured interaction range. The researcher restores the keyboard to a
+common starting pose before each condition. Participants may then make comfort
+adjustments, but the final keyboard position is not stored in the exported dataset.
+Keyboard position is therefore treated as a controlled starting condition rather than a
+recorded experimental variable.
+4.4 Implementation of the Six Input Methods
+VRKeyboardInputModeSelector activates the required input components, resets key and
+probe states, and routes confirmed input through the shared keyboard and
+text-composition pipeline.
+4.4.1 Controller ray selection with trigger confirmation (Press)
+The Press method uses both controllers. VRKeyboardInputModeSelector enables
+VRKeyboardRayProbeFollower for each controller. This script places a small ball where
+the controller ray touches the keyboard. When the user presses a trigger, the script
+moves the ball down and sends the trigger value to the selected VRKeyboardKey. The
+key is entered when the press value reaches its threshold. When the trigger is released,
+the key and the ball return to their original positions. VRKeyboardController then adds
+the selected character to the input text. Figure 4.2 illustrates the interaction used by
+the Press method.
+
+===== PDF PAGE 39 =====
+
+32CHAPTER 4. SOFTW ARE IMPLEMENTATION
+Figure 4.2: Conceptual illustration of the Press method. The controller ray points to a
+virtual key, and the trigger confirms the selected character.
+4.4.2 Controller-based swipe typing (Swipe)
+The Swipe method uses the right controller ray. The participant points at the first
+letter, holds the trigger and moves the ray across the letters of the word.
+VRKeyboardSwipeInput records the movement path and the keys crossed by the ray.
+Releasing the trigger completes the swipe. SwipeTypingRecognizer then ranks the five
+most likely candidate words from the vocabulary. The participant uses the left
+thumbstick to select a word and presses the left trigger to confirm it. Figure 4.3
+illustrates the interaction used by the swipe method.
+Figure 4.3: Conceptual illustration of the Swipe method. The user holds the trigger and
+moves the controller ray across the letters of a word.
+4.4.3 Direct controller tapping (StickTap)
+The StickTap method attaches a virtual stick to each controller.
+VRKeyboardStickProbeFollower controls each stick and attaches a small probe at its
+end. The participant can push the controller thumbstick up or down to increase or
+reduce the stick length. A key is entered when the probe presses it beyond the
+activation threshold. The participant must lift the stick before tapping the next key.
+Figure 4.4 illustrates the interaction used by the StickTap method.
+
+===== PDF PAGE 40 =====
+
+4.4. IMPLEMENTATION OF THE SIX INPUT METHODS33
+Figure 4.4: Conceptual illustration of the StickTap method. The user moves the
+controller-mounted stick towards a virtual key and taps it to enter the character.
+4.4.4 Controller ray selection with dwell confirmation (Dwell)
+The Dwell method uses the right controller ray. When the ray points at a key, a
+0.6-second timer starts. The key becomes more highlighted as the timer progresses. If
+the ray leaves the key or moves to another key, the timer resets. When the timer is
+complete, the selected key is entered automatically. No trigger press is required.
+Figure 4.5 illustrates the interaction used by the Dwell method.
+Figure 4.5: Conceptual illustration of the Dwell method. The user points the controller
+ray at a virtual key and keeps it there until the dwell time is reached.
+4.4.5 Two-Finger and Ten-Finger Hand-Tracked Typing (Hand-
+Touch and HandTouch10)
+The HandTouch and HandTouch10 methods use the same hand-tracking system.
+VRKeyboardHandProbeFollower places a small VRKeyboardPressProbe on each active
+fingertip. A key is entered when a probe presses it beyond the activation threshold.
+HandTouch uses the two index fingers, while HandTouch10 uses all ten fingertips. The
+script limits how far the fingers and hand models can move into the keyboard. If hand
+tracking is lost, the probes on that hand are disabled to prevent accidental input. They
+
+===== PDF PAGE 41 =====
+
+34CHAPTER 4. SOFTW ARE IMPLEMENTATION
+are enabled again when tracking returns. Figure 4.6 illustrates the interaction used by
+the HandTouch and Hantouch10 method.
+Figure 4.6: Conceptual illustration of the HandTouch and Hantouch10 method. The user
+touches the virtual keys directly with fingers to enter characters.
+4.5 Swipe Recognition and Candidate Interface
+4.5.1 Gesture Capture
+VRKeyboardSwipeInput records the ray path while the participant holds the trigger.
+The path is projected onto the normalised two-dimensional keyboard plane. A new
+point is recorded when the ray has moved by at least 0.01, and the path is reduced when
+it reaches 256 points. The first touched letter is always accepted. Later letters are
+accepted when the ray moves near the key centre or remains on the key for 0.04 seconds.
+Staying on the same key for 0.22 seconds records a repeated letter. While the trigger
+remains held, a 0.08-second tolerance allows the ray to cross small gaps between keys.
+Releasing the trigger completes the gesture, and a valid word gesture is sent to
+SwipeTypingRecognizer.
+4.5.2 Keyboard Model and Preprocessing
+The recogniser uses ideas from earlier word-gesture systems. Each word has a template
+based on the centres of its letter keys. The recogniser compares the user’s path with
+these templates. It uses the start and end points to remove unlikely words. It also
+compares both the shape and the position of the path. These ideas were mainly based
+on SHARK²[16].
+SwipeKeyboardLayout finds the centres of the 26 letter keys. It projects these points
+onto a normalised two-dimensional keyboard plane. The same plane is used for the
+user’s swipe path. The recogniser first cleans the recorded path. It removes consecutive
+points that are less than 0.004 apart. It then smooths the path by averaging each point
+with nearby points. It also removes isolated points that are far from the rest of the
+path. A threshold of three standard deviations is used for this step.
+The cleaned path is used to compare the order of the touched keys and the distance
+
+===== PDF PAGE 42 =====
+
+4.5. SWIPE RECOGNITION AND CANDIDATE INTERF ACE35
+from each key. It is also resampled to 64 equally spaced points. The $1 Unistroke
+Recognizer also uses 64 resampled points[30]. These points are used to compare the
+position and direction of the user’s path with each word template.
+A normalised version of the path is used for shape comparison and DTW:
+ˆpi = pi −c
+max(w, h) (4.1)
+Here,p i is a point on the resampled path.cis the centre of the path’s bounding box.w
+andhare the width and height of the box. This step moves the path centre to the origin
+and gives paths a similar size. It does not rotate the path. The original direction is kept
+because it provides useful information about the word’s position on the QWERTY
+keyboard.
+The recogniser is configured to load a maximum of 20,000 words. The current
+vocabulary asset contains 10,001 entries after vocabulary preparation. During template
+construction, consecutive repeated letters are collapsed because they correspond to the
+same key position. The resulting template trajectory is then processed using the same
+resampling and normalisation procedure as the user-input trajectory.
+4.5.3 Candidate Generation and Coarse Filtering
+The recogniser first finds the three letters closest to the start point and the three letters
+closest to the end point. It then uses these letters to filter the vocabulary and keeps up
+to 2,000 candidate words. Each candidate is given an endpoint cost,Cret. Letd s andd e
+be the distances between the gesture endpoints and the candidate’s first and last letter
+keys. The cost is:
+Cret =
+
+
+
+0.35ds + 0.35de,if both endpoints match,
+ds + 0.18,if only the start endpoint matches,
+de + 0.18,if only the end endpoint matches,
+0.18Is + 0.18Ie,if a fallback candidate is used.
+(4.2)
+Is andI e show whether the start and end letters match. A value of 0 means that the
+letter matches, while a value of 1 means that it does not match. If both letters match,
+each endpoint distance is multiplied by 0.35. If only one letter matches, its full distance
+is used and a penalty of 0.18 is added for the other letter. These values are fixed
+settings in the implementation.
+Each candidatecis then given a coarse score:
+
+===== PDF PAGE 43 =====
+
+36CHAPTER 4. SOFTW ARE IMPLEMENTATION
+S(c) = 0.45M location(c) + 0.35Mshape(c) + 0.15Cret(c) + 0.05P(c)−0.02F(c)(4.3)
+Mlocation(c)measures the mean distance between the paths in keyboard coordinates.
+Mshape(c)measures the mean distance between the normalised paths.Cret(c)is the
+endpoint cost,P(c)is the path-length penalty, andF(c)is the word-frequency score. A
+lower value ofS(c)means a better match.
+The use of endpoint filtering and separate shape and location information was based on
+SHARK²[16]. Equation 4.2 defines the endpoint cost used in this project. Equation 4.3
+combines location distance, shape distance, endpoint cost, path-length penalty and word
+frequency. The coefficients control the effect of each part on the coarse score. These
+equations and values were designed for this Unity implementation. The values were
+selected during developer testing and were fixed before the user study. The same values
+were used for all participants and conditions. They were not taken directly from earlier
+studies and are not claimed to be optimal.
+The coefficients set the relative contribution of each feature. Position and shape receive
+the largest weights because they provide the main geometric evidence. Endpoint and
+path-length penalties refine the comparison. The negative frequency term gives common
+words a small preference.
+Full scoring includes ordered key alignment, key-probability alignment, and dynamic
+time warping, which are computationally expensive. To reduce this cost, the recogniser
+evaluates the lowest-scoring candidates, up to a fixed maximum of 96. If the shortlist is
+smaller, it evaluates all available candidates.
+4.5.4 Trajectory Matching and Final Scoring
+The system calculates a final score for each shortlisted candidate. Ordered-key and
+key-probability matching use the cleaned path before resampling. This path can contain
+a different number of points for each gesture. DTW and direction matching use the path
+after it has been resampled to 64 points. DTW uses the normalised path. Direction
+matching uses the path in keyboard coordinates.
+The scoring stage examines letter order, key probability, overall shape, endpoints,
+movement direction, path length, word frequency and movement speed. Each feature
+produces either a cost or a reward, and a lower final score indicates a closer match. The
+construction of word templates from paths through key centres, together with the use of
+shape and location evidence, was motivated by earlier word-gesture keyboard
+systems[33][16].
+Letp i be cleaned gesture pointi, wherei= 1, . . . , N. Letk j be keyjin the candidate
+
+===== PDF PAGE 44 =====
+
+4.5. SWIPE RECOGNITION AND CANDIDATE INTERF ACE37
+template, wherej= 1, . . . , M. Consecutive repeated letters are stored once in the
+template. The centre of keykj isq kj.
+Earlier word-gesture systems assume that a gesture moves through the letter keys of a
+word in the correct order[33][16]. The ordered-key method used here follows this general
+idea. Its equations and values were designed for this project.
+The ordered-key score checks whether the gesture follows the candidate keys in the
+correct order. The system can skip a gesture point, but it must match every key in the
+candidate template. The distance between gesture pointpi and key centreqkj is:
+dkey(i, j) =
+pi −q kj
+
+The matching cost is:
+cord(i, j) =
+
+
+
+dkey(i, j), d key(i, j)≤r
+dkey(i, j) + 0.12 dkey(i, j)−r
+r , d key(i, j)> r
+wherer= 0.095is the key radius. Points inside this radius use their direct distance.
+Points outside it receive an additional cost. The ordered-key alignment uses:
+A(i, j) = min
+
+
+
+A(i−1, j) +λ order
+A(i−1, j−1) +c order(i, j)
+whereλ order = 0.0005is the cost of skipping one gesture point. The first term skipspi.
+The second term matchespi withk j. The initial conditions areA(i,0) = 0and
+A(0, j) =∞forj >0. The ordered-key score is:
+Corder = A(N, M)
+M +C ret
+Dividing byMreduces the effect of word length.C ret is the endpoint cost defined in
+Section 4.5.3. It carries information from the earlier candidate filtering step into the full
+score. The separate start and end scores described below measure the direct distances to
+the candidate’s actual first and last keys.
+Earlier probabilistic interaction models represented uncertainty around virtual keys and
+touch targets[12][5]. SHARK²also changed spatial distances into probability scores[16].
+This project uses a similar general idea. At each cleaned gesture point, the recogniser
+gives a probability to every letter key. A nearby key receives a higher probability. A
+distant key receives a lower probability. The Gaussian equation, the value ofσ, and the
+alignment method were designed for this project. For letterkat gesture pointpi, the
+
+===== PDF PAGE 45 =====
+
+38CHAPTER 4. SOFTW ARE IMPLEMENTATION
+unnormalised weight is:
+wi(k) = exp
+ 
+− ∥pi −q k∥2
+2σ2
+!
+whereσ= 0.075. The probability is calculated across all keyboard letters:
+Pi(k) = wi(k)P
+ℓ wi(ℓ)
+A second alignment uses the letter probabilities. It checks the candidate letters in order.
+The system may skip gesture points. Every candidate key must be matched:
+H(i, j) = min
+
+
+
+H(i−1, j) +λ prob
+H(i−1, j−1)−lnP i(kj)
+whereλ prob = 0.010is the probability-alignment skip cost. The negative logarithm
+converts a high probability into a low matching cost. The recurrence, skip cost and
+scaling factor were selected as fixed engineering settings for this implementation and
+were not estimated from participant data. The final probability score is:
+Cprob = clamp
+ H(N, M)
+6M ,0,1
+
+Dividing byMreduces the effect of word length. The value 6 controls the scale of the
+negative log cost. Clamping keeps the final score between 0 and 1.
+Dynamic time warping compares the normalised gesture shape with the normalised
+candidate template. It allows similar path sections to contain different numbers of
+points. This supports variations in movement speed. The recurrence follows the
+standard DTW formulation of Sakoe and Chiba[21]. The use of resampled and
+normalised two-dimensional stroke templates is consistent with Wobbrock et al. [30].
+The resampling count, DTW window radius and normalisation by the selected
+warping-path length are implementation-specific choices.
+Let ˆga and ˆtb denote points from the normalised gesture and template paths. Their local
+distance is:
+dpath(a, b) =
+ˆga − ˆtb
+
+The DTW matrix is calculated as:
+B(a, b) =d path(a, b) + min
+
+
+
+B(a−1, b)
+B(a, b−1)
+B(a−1, b−1)
+Both paths contain 64 points. The implementation uses a window radius of 10. A point
+
+===== PDF PAGE 46 =====
+
+4.5. SWIPE RECOGNITION AND CANDIDATE INTERF ACE39
+is therefore compared only with nearby template positions. This limit reduces
+processing time and restricts excessive path warping. IfLis the number of steps in the
+selected warping path, the DTW score is:
+Cdtw = B(64,64)
+L
+Dividing byLgives the mean distance along the selected alignment. The start and end
+scores compare the gesture endpoints with the first and last candidate keys:
+Cstart =∥p 1 −q k1∥+ 0.18I s
+Cend =∥p N −q kM ∥+ 0.18I e
+Here,I s = 1when the candidate does not match a selected start letter, andIs = 0
+otherwise.I e follows the same rule for the end letter. These scores measure direct
+endpoint error.C ret records how the candidate entered the candidate set, so it has a
+different role. Direction, angular change and total path length have previously been
+used as geometric descriptors of single-stroke gestures[20]. Their use as recognition
+features is therefore supported by earlier gesture-recognition research.
+The direction score checks whether the gesture and template move in similar directions.
+Letg a andt a denote corresponding points from the two resampled paths. Their
+direction vectors are:
+ua =g a+1 −g a
+va =t a+1 −t a
+LetVcontain the segment pairs in which both vectors have a non-zero length. The
+direction score is:
+Cdir = 1
+|V|
+X
+a∈V
+angle (ua,v a)
+180◦
+Each path contains 64 points and up to 63 segments. A gesture segment is compared
+with the template segment at the same resampled position. Dividing by180◦ gives a
+value between 0 and 1. A low value indicates similar movement directions. Zero-length
+segments are excluded because they have no defined direction. The path-length score
+detects paths that are too short, too long or contain unnecessary movement. Letlg be
+the gesture length andlt be the template length. Their ratio is:
+ρ= lg
+lt
+
+===== PDF PAGE 47 =====
+
+40CHAPTER 4. SOFTW ARE IMPLEMENTATION
+The path-length score is:
+Cpath =
+
+
+
+0.20|1−ρ|, ρ≤1
+ln(ρ) + 0.20 max(0, ρ−1.7), ρ >1
+A short path receives a cost based on the missing length. A long path receives a
+logarithmic cost. The logarithm limits the effect of moderate differences. The final term
+adds a further cost when the gesture is more than 1.7 times the template length. The
+vocabulary was compiled and edited fromgoogle-10000-english.txtand20k.txtin
+the Google 10000 English repository[13]. The source files contain common English words
+in frequency order and are derived from an analysis of the Google Web Trillion Word
+Corpus. The files provide word order without frequency counts. The implementation
+therefore uses each word’s position in the final vocabulary as an approximation of its
+frequency rank, with earlier entries receiving higher values. Lexical frequency and other
+language-model priors have previously been used to improve candidate ranking in
+virtual-keyboard and word-gesture decoding systems[12][16][34]. However, the linear
+rank-to-reward conversion used here is specific to this implementation and is not
+equivalent to a corpus-derived unigram probability. During loading, words are converted
+to lowercase. Unsupported characters, one-letter entries and duplicate words are
+removed. For candidatec, the frequency reward is:
+Rfreq(c) = clamp
+
+1− rc
+Wmax −1 ,0,1
+
+wherer c is the zero-based rank of the candidate andWmax is the maximum vocabulary
+size. The current implementation setsWmax = 20,000. A word near the beginning of the
+vocabulary receives a larger reward.
+Previous word-gesture research has treated gesture-production speed as potentially
+informative for distinguishing visually guided tracing from faster, memory-driven
+gesturing[16][34]. Leiva et al. [17] discussed the possibility that users speed up during
+the middle of a swipe and slow down near target regions. Motivated by these
+observations, the present implementation applies a small reward when the gesture is
+both close to an expected key and slower than its median speed. The precise reward
+function and its coefficient are project-specific heuristics. The speed at gesture pointiis:
+si = ∥pi −p i−1∥
+ti −t i−1
+Letr j be the gesture-point index matched with candidate letterkj. The closeness and
+slowing values are:
+nj = clamp
+ 
+1−
+prj −q kj
+
+0.095 ,0,1
+!
+
+===== PDF PAGE 48 =====
+
+4.5. SWIPE RECOGNITION AND CANDIDATE INTERF ACE41
+vj = clamp
+
+1− srj
+˜s,0,1
+
+where˜sis the median gesture speed. The speed reward is:
+Rspeed = 1
+M
+MX
+j=1
+njvj
+A high value indicates that the gesture is close to the expected keys and slower than its
+median speed at those positions. The final score combines all features:
+J(c) = 0.30C ord + 0.25Cdtw + 0.10Cprob
++ 0.10Cstart + 0.10Cend + 0.10Cdir
++ 0.05Cpath −0.05R freq −0.05R speed
+Ordered-key alignment and DTW receive the largest weights because letter order and
+path shape provide the main matching evidence. Key probability, endpoints and
+direction refine the comparison. Path length, frequency and speed have smaller effects.
+Frequency and speed appear with negative signs because a high reward should reduce
+the final score. Ordered-key and endpoint distances use normalised keyboard
+coordinates. DTW uses a separately scale- and translation-normalised path.
+Key-probability, direction, frequency and speed terms are bounded between 0 and 1,
+while the path-length penalty is calculated from the gesture-to-template length ratio.
+The key-centre template representation was motivated by earlier word-gesture keyboard
+research[33][16], while the DTW recurrence follows the established
+dynamic-programming approach of Sakoe and Chiba[21]. The use of spatial and
+language evidence is also consistent with earlier virtual-keyboard and word-gesture
+decoding systems[12][16][34]. However, the endpoint costs, ordered-key alignment,
+key-probability alignment, direction and path-length penalties, frequency and speed
+rewards, and the weighted-sum formulation inJ(c)were developed specifically for this
+implementation. Their thresholds and coefficients were selected as fixed engineering
+settings before the formal participant study. No grid search or participant-study data
+were used to optimise these parameters, and the selected values are not claimed to be
+theoretically or empirically optimal. The candidates are sorted byJ(c)in ascending
+order and passed to the candidate-selection stage.
+Because consecutive repeated letters are collapsed during template construction, words
+such as “filed” and “filled” may receive identical geometric scores. They may therefore be
+distinguished primarily by the frequency-rank reward or through manual selection from
+the candidate list. The candidate interface allows the participant to resolve this
+ambiguity.
+To assess the technical feasibility of the fixed settings before the formal participant
+
+===== PDF PAGE 49 =====
+
+42CHAPTER 4. SOFTW ARE IMPLEMENTATION
+study, the developer conducted an internal validation test on the VR headset. The test
+used the 56 validation words drawn from the study sentences. Each word was entered
+five times in a random order, producing 280 Swipe inputs. The intended word was
+ranked first in 94.29% of the inputs and appeared within the top five in 99.29%. Every
+input produced at least one candidate. The median recognition time was 34.73 ms, and
+95% of the results were produced within 51.17 ms. These results provided preliminary
+technical evidence that the recogniser consistently produced candidate lists and operated
+with low latency for the tested vocabulary. However, because the validation involved
+only the developer and the exact study word set, it does not establish general-user
+recognition accuracy or demonstrate that the selected parameters were optimal.
+4.5.5 Candidate Selection
+After final scoring, the candidate panel displays up to five words in ascending score
+order. The lowest-scoring word is selected by default. The user moves between
+candidates with the left controller thumbstick and confirms the highlighted word by
+pressing the trigger. After confirmation, the selected word is sent to
+VRKeyboardTextComposer. The system records a CandidateSelection action and
+updates the trial timer and action counters.Figure 4.7 shows the complete processing
+pipeline from gesture capture to candidate selection.
+Figure 4.7: Swipe gesture processing and candidate-ranking pipeline
+
+===== PDF PAGE 50 =====
+
+4.6. EXPERIMENTAL WORKFLOW IMPLEMENTATION43
+4.6 Experimental Workflow Implementation
+4.6.1 Interface States
+InstructionCanvasController manages eight interface states: Introduction, Method
+Instruction, Practice Choice, Practice Trial, Formal Ready, Formal Trial, Formal Result
+and Completed. Each state controls the visible interface and available user input.
+Instruction screens disable text entry, and trial screens enable it. The controller also
+keeps the selected input method and practice state consistent with the mode selector,
+active sentence set and ResultOutput.
+4.6.2 Practice and Formal Trials
+TypingTestSession uses two practice sentences and eight formal sentences, as shown in
+Figure 4.8. Each trial lasts up to 120 seconds, starting with the first valid input action.
+After each input, the system compares the transcription with the target. Incorrect
+characters are displayed in red and the current target position in blue. A sentence
+completes when the transcription reaches the target length. The session records the
+result, clears the field and loads the next sentence. Practice ends after two completed
+sentences or timeout; formal entry ends after eight completed sentences or timeout.
+Figure 4.8: Practice and formal sentence sets configured in the TypingTestSession com-
+ponent.
+4.6.3 Result Display and Method Progress
+When practice is completed, InstructionCanvasController switches to the formal
+sentence set and displays the Formal Ready screen. If practice is skipped, the formal
+trial is prepared directly. The trial timer begins with the first valid input action. At the
+end of each formal trial, ResultOutput exports the collected data. The result screen then
+displays Gross WPM, accuracy derived from attempted-prefix CER, error count and the
+project-specific Effective WPM measure. Text entry is disabled during the five-second
+result display. The application then advances automatically to the next method.
+
+===== PDF PAGE 51 =====
+
+44CHAPTER 4. SOFTW ARE IMPLEMENTATION
+4.7 Measurement and Data Export
+4.7.1 Physical Action Recording
+VRKeyboardInputTelemetry records physical actions during active trials: key presses,
+swipe gestures, Backspace, Shift, Caps Lock and controller candidate confirmations.
+Each swipe contributes one action. Controller confirmation adds a CandidateSelection
+action; keyboard confirmation uses its existing key action. ResultOutput stores
+aggregate action totals at sentence and trial levels, with separate Backspace, Shift and
+Caps Lock fields. The first valid input action also starts the timer.
+4.7.2 Sentence and Trial Metrics
+TypingTestSession calculates the performance measures defined in Section 3.2.3.
+Completed sentences are compared with the full target text using Levenshtein distance.
+If the timer expires during a sentence, the entered text is compared with a target prefix
+of the same length. The entered part of the sentence is included in the results, while the
+unattempted suffix is excluded. Any later sentences that have not been started are also
+excluded.
+A timed-out sentence with no entered text produces no sentence-level record. A
+partially entered sentence produces a record withCompleted=false. Characters entered
+beyond the full target length remain insertion errors.
+The exportedCERfield therefore stores the attempted-prefix CER defined in Section
+3.2.3. Typing progress is measured separately through Gross WPM, total entered
+character count and the completion state of each sentence.
+4.7.3 CSV Output and Participant IDs
+ResultOutput appends trial records to trial_results.csv and sentence records to
+sentence_results.csv. Trial rows contain participant ID, method, trial type, duration,
+WPM, CER, accuracy, action counts and validity fields. Sentence rows contain target
+and entered text, duration, character counts, errors, actions and completion state. For a
+partially entered sentence,TargetTextstores the full target sentence, while
+TargetCharacterCountstores the length of the target prefix used for comparison. The
+CERandAccuracyPercentfields are calculated from this attempted prefix. The
+Completedfield distinguishes completed sentences from partially entered sentences.
+Session ID and trial ID link both files; participant ID links them to questionnaire data,
+and all Participant IDs follow the P001 format.
+
+===== PDF PAGE 52 =====
+
+4.8. CHAPTER SUMMARY45
+4.8 Chapter Summary
+This chapter described the implementation of the shared virtual keyboard, six input
+methods, swipe recogniser, experimental workflow and data-export system. All input
+methods use a common text-composition and measurement pipeline, while
+method-specific components convert controller or hand-tracking input into shared key or
+word events. The resulting implementation provides the software platform used in the
+experimental evaluation presented in the following chapter.
+
+===== PDF PAGE 53 =====
+
+Chapter 5
+Testing and Evaluation
+5.1 Introduction
+This chapter reports the evaluation of the six virtual-reality text-entry methods
+implemented in the shared Unity application. The analysis combines objective trial- and
+sentence-level logs with the pre-experiment questionnaire, the post-method
+questionnaire, the Swipe-specific questionnaire, and the final method-comparison
+questionnaire. The evaluation addresses the four research questions introduced in
+Section 3.4.1: differences in objective performance; differences in workload and user
+experience; participants’ assessment of Swipe recognition and candidate selection; and
+overall method preference.
+5.2 Evaluation Dataset and Data Integrity
+All ten participants completed six typing methods, producing one intended formal trial
+per participant and method. Practice records were excluded. Before calculating the
+results, the trial and sentence exports were reconciled using participant ID, trial ID, and
+method.
+The final dataset preparation is summarised in Table 5.1, all participant had complete
+questionnaire.
+Table 5.1: Dataset inclusion and integrity summary.
+Dataset item Count
+Number of participants 10
+Total participant–method combinations 60
+Formal trial records 60
+Formal sentence records 161
+Completed sentence records 105
+Partially completed sentence records 56
+5.3 Participant Characteristics
+Nine of the ten participants were right-handed. Seven were aged 21–25, and three were
+aged 26–30. Most participants were familiar with a physical QWERTY keyboard. Seven
+rated their typing speed as fast or very fast, while three rated it as moderate. Six rated
+46
+
+===== PDF PAGE 54 =====
+
+5.4. OBJECTIVE PERFORMANCE RESULTS47
+their typing accuracy as accurate, and four rated it as moderate. Experience with VR
+and other input methods varied. Four participants had no VR experience, two had
+occasional experience, one had regular experience, and three had extensive experience.
+Seven participants used mobile Swipe typing rarely or never. Four had no experience
+with controller pointing, and six had no experience with hand tracking.
+5.4 Objective Performance Results
+Table 5.2 presents the main speed, error-adjusted speed, attempted-prefix accuracy, and
+sentence-completion results. Each cell is the mean across participants followed by the
+sample standard deviation in parentheses.
+Table 5.2: Objective performance by input method, reported as mean (SD).
+Method Gross WPMEffective WPMAccuracy (%)Completed sentences/trial
+Press 13.71 (4.54) 13.49 (4.30) 98.74 (1.71) 2.10 (0.57)
+Swipe 11.28 (2.68) 10.94 (2.91) 96.58 (5.80) 2.00 (0.47)
+StickTap 9.65 (3.74) 9.08 (3.79) 94.67 (12.94) 1.60 (0.70)
+Dwell 8.49 (1.05) 8.39 (1.04) 98.83 (2.01) 1.30 (0.48)
+HandTouch 9.65 (2.44) 9.48 (2.37) 98.41 (3.27) 1.80 (0.42)
+HandTouch10 11.06 (4.10) 7.52 (4.60) 73.38 (34.82) 1.70 (0.82)
+5.4.1 Text-Entry Speed
+Press produced the highest mean Gross WPM (13.71) and the highest mean Effective
+WPM (13.49). The small difference between these two values reflects its high
+attempted-prefix accuracy. Swipe was second on both measures, with a mean Gross
+WPM of 11.28 and Effective WPM of 10.94. Dwell had the lowest Gross WPM (8.49),
+but its small error adjustment left Effective WPM almost unchanged at 8.39.
+HandTouch10 illustrates why both speed measures are required. Its mean Gross WPM
+(11.06) was close to Swipe, but its mean Effective WPM fell to 7.52 because of large
+errors in several participants. The between-participant standard deviation for
+HandTouch10 Effective WPM (4.60) was also the largest of the six methods. Press
+produced the highest participant-level Effective WPM for seven of the ten participants;
+HandTouch did so for two participants and HandTouch10 for one. Figure 5.1 shows the
+complete within-subjects pattern.
+5.4.2 Accuracy and Sentence Completion
+Dwell, Press, and HandTouch all achieved mean attempted-prefix accuracy above 98%.
+However, Dwell completed only 1.30 sentences per trial on average, compared with 2.10
+for Press. Dwell was therefore accurate on the text that participants attempted, but
+slow in progressing through the phrase set. Swipe combined 96.58% accuracy with 2.00
+
+===== PDF PAGE 55 =====
+
+48CHAPTER 5. TESTING AND EV ALUATION
+Figure 5.1: Gross and Effective WPM by input method
+completed sentences per trial. StickTap showed a lower mean accuracy of 94.67% and
+greater between-participant variation, including one notably inaccurate trial.
+HandTouch10 had a mean accuracy of 73.38%, with a large SD of 34.82. The median
+accuracy was still 95.05%, which shows that some participants had very low accuracy
+while others performed well. As shown in Figure 5.2, P002, P003, P004, and P009 had
+much lower accuracy than the other participants. High final accuracy did not always
+mean that the interaction was easy or error-free. HandTouch10 had an average of 18.2
+backspaces per trial, showing that participants often corrected mistakes before the final
+text was measured. This extra correction may also have reduced their progress through
+the task. On average, HandTouch10 completed 1.70 sentences per trial. Therefore,
+HandTouch10 could produce accurate final text for some users, but it was not
+consistently reliable or efficient across the sample.
+Attempted-prefix accuracy excludes the unentered suffix of a sentence at timeout.
+Accordingly, a high value should not be interpreted as high overall task completion. The
+Dwell results demonstrate this distinction and justify reporting accuracy together with
+WPM and completed sentences.
+5.4.3 Correction Behaviour and Recorded Actions
+Table 5.3 shows correction and action measures. Dwell had the fewest backspaces, with
+2.5 per trial. Press was next with 9.0. HandTouch had the most backspaces at 21.9,
+followed by StickTap at 19.3 and HandTouch10 at 18.2. This shows that the
+contact-based methods needed more correction, even when the final accuracy was high.
+
+===== PDF PAGE 56 =====
+
+5.5. WORKLOAD AND POST-METHOD EXPERIENCE49
+Figure 5.2: Participant-level attempted-prefix accuracy (%) across the six input methods.
+Cell colour represents accuracy from lower (red) to higher (green) values.
+Swipe had the lowest recorded action count at 83.8. However, this does not mean that it
+required the least physical effort. One Swipe action can enter a whole word, while the
+other methods usually enter one character at a time. Candidate selection is also counted
+as an action. Therefore, these values show system events rather than physical effort.
+Press gave the strongest overall performance, with high speed and accuracy. Swipe
+reduced character-by-character input while keeping good speed and accuracy. Dwell was
+accurate but slow. HandTouch produced accurate final text but required many
+corrections. HandTouch10 showed large differences between participants and its
+Effective WPM was much lower than its Gross WPM.
+Table 5.3: Correction and recorded-action measures, reported as mean (SD).
+Method Backspaces/trial Backspaces/final character Recorded actions/trial
+Press 9.0 (6.41) 0.080 (0.063) 158.6 (40.10)
+Swipe 15.2 (8.05) 0.147 (0.077) 83.8 (12.42)
+StickTap 19.3 (8.42) 0.246 (0.148) 140.0 (30.92)
+Dwell 2.5 (2.12) 0.031 (0.028) 92.7 (8.45)
+HandTouch 21.9 (6.72) 0.258 (0.162) 144.4 (26.10)
+HandTouch10 18.2 (14.51) 0.281 (0.465) 154.2 (29.91)
+5.5 Workload and Post-Method Experience
+This section presents the Raw NASA–TLX results and six five-point post-method
+ratings. All ten participants completed the questionnaire after each method.
+5.5.1 Raw NASA–TLX
+Table 5.4 shows the overall Raw NASA–TLX score and its six dimensions. Higher scores
+indicate greater workload. For the Performance dimension, a higher score indicates
+worse perceived performance.
+
+===== PDF PAGE 57 =====
+
+50CHAPTER 5. TESTING AND EV ALUATION
+Table 5.4: Raw NASA–TLX scores by input method, reported as mean (SD).
+Method Overall Mental Physical Temporal Performance Effort Frustration
+Press 26.6 (14.4) 25.5 (19.8) 32.5 (20.8) 34.5 (21.3) 15 (12.7) 32 (25.7) 20 (20.3)
+Swipe 32.8 (15.1) 37 (28.4) 40 (25.8) 43.0 (25.9) 25 (19.4) 29.5 (17.6) 22 (17.4)
+StickTap 50.6 (8.6) 50 (20.9) 59.5 (14.4) 49.5 (17.7) 40.5 (13.2) 51.0 (18.5) 53 (18.0)
+Dwell 29.1 (17.9) 34 (32.9) 34.5 (27) 39 (23.5) 21.5 (12.7) 24 (18.1) 21.5 (23.6)
+HandTouch 54.1 (19.6) 51 (24.7) 55 (19.1) 59 (25.1) 47.5 (30.2) 56.5 (26.4) 55.5 (24.7)
+HandTouch10 67 (20.7) 64 (26.1) 69.5 (17.2) 62 (28.1) 70 (27.6) 62.5 (28.9) 74 (23.4)
+Press had the lowest overall workload (26.6), followed by Dwell (29.1) and Swipe (32.8).
+HandTouch10 had the highest workload (67.0), with high Physical Demand (69.5),
+Performance (70.0), and Frustration (74.0). HandTouch and StickTap also had relatively
+high workload scores of 54.1 and 50.6. The workload results were consistent with the
+objective results for Press and HandTouch10. Press combined high text-entry
+performance with low workload, while HandTouch10 had lower reliability and the
+highest workload. Dwell showed a different trade-off. It was the slowest method, but its
+Effort, Frustration, and Physical Demand scores were relatively low.
+5.5.2 Ease, Fatigue, Perceived Performance, Comfort and Satis-
+faction
+Table 5.5 reports the six post-method ratings as median. Higher scores indicate better
+ratings for ease, perceived speed, perceived accuracy, comfort, and satisfaction. For
+fatigue, a higher score indicates more fatigue.
+Table 5.5: Post-method ratings, reported as median.
+Method Ease Fatigue Perceived speed Perceived accuracy Comfort Satisfaction
+Press 4 1.5 4 4.5 4 4
+Swipe 4 2.5 4 4 4 4
+StickTap 2 3 3 2.5 2 2.5
+Dwell 4 1.5 2 5 3.5 3
+HandTouch 2 4 2.5 2 2 2
+HandTouch10 1.5 4 1 1 1.5 1.5
+Press and Swipe received high ratings for ease, comfort, and satisfaction. Press was also
+rated as accurate and had low fatigue. Dwell received the highest perceived-accuracy
+rating and low fatigue, but its perceived speed was low.
+StickTap, HandTouch, and HandTouch10 received lower ratings overall. HandTouch10
+had the lowest perceived speed and accuracy ratings. HandTouch also showed a clear
+difference between objective and subjective results. Its final attempted-prefix accuracy
+was high, but participants reported low ease, comfort, and satisfaction, together with
+high fatigue. The high final accuracy was partly achieved through frequent correction.
+This shows that final accuracy alone does not fully describe the user experience.
+
+===== PDF PAGE 58 =====
+
+5.6. SWIPE RECOGNITION AND CANDIDATE SELECTION51
+5.6 Swipe Recognition and Candidate Selection
+The Swipe questionnaire measured participants’ views of recognition and candidate
+selection. These results describe participant perceptions rather than objective
+recognition accuracy.
+Overall, the ratings were positive. Nine participants reported that the intended word
+was often or always the first candidate. All ten reported that the intended word was
+often or always included in the candidate list. Seven participants rated candidate
+selection as easy and three as very easy. Nine participants rated recognition as
+predictable or very predictable. Eight participants also found the candidate list
+considerably or substantially helpful.The distributions of the five Swipe-specific
+questionnaire ratings are shown in Figure 5.3.
+However, recognition was not always correct on the first attempt. Swipe also produced
+an average of 15.2 backspaces per trial, showing that correction was still needed.
+Participants suggested using the ray to directly select candidate words. These comments
+suggest that future improvements should focus on making candidate selection faster and
+easier.
+Figure 5.3: Distribution of Swipe-specific questionnaire ratings. Higher ratings indicate
+more positive responses. Numbers inside the bars show the number of participants.
+
+===== PDF PAGE 59 =====
+
+52CHAPTER 5. TESTING AND EV ALUATION
+5.7 Overall Preference and Qualitative Feedback
+Table 5.6 summarises the overall preference rankings. A lower mean preference rank
+indicates greater preference. Press ranked first overall, with a mean preference rank of
+1.5 and five first-place selections. Swipe ranked second with a mean rank of 2.1 and four
+first-place selections. Dwell ranked third with a mean rank of 3.3 and one first-place
+selection. HandTouch, StickTap, and HandTouch10 ranked fourth, fifth, and sixth
+respectively. HandTouch10 had the lowest overall preference, with a mean rank of 5.8.
+Table 5.6: Final method preference rankings.
+Method First-place count Mean preference rank Overall rank
+Press 5 1.5 1
+Swipe 4 2.1 2
+Dwell 1 3.3 3
+HandTouch 0 4.0 4
+StickTap 0 4.3 5
+HandTouch10 0 5.8 6
+Figure 5.4 shows the responses to the final method comparison questionnaire. Press and
+Swipe were both selected by four participants as the fastest method. Press and Dwell
+were each selected by four participants as the most accurate. Press was selected by five
+participants as the easiest method to learn and by six as the method they were most
+likely to use regularly. Swipe was selected by six participants as both the most
+comfortable and the most enjoyable method. Dwell was selected by four participants as
+causing the least physical fatigue. HandTouch10 was selected as the least preferred
+method by eight participants, while StickTap was selected by two.
+Participant comments helped explain these preferences. Press was mainly valued for its
+accuracy, control, familiarity, and low learning cost. Swipe was valued for speed and
+comfort, especially when entering longer words. Dwell was considered accurate and less
+tiring, although its activation delay made input slower. StickTap was criticised for
+inaccuracy and difficulty in controlling the virtual stick. Some participants found
+HandTouch easy to use because it allowed direct finger input, although several
+participants reported problems with hand-tracking accuracy. HandTouch10 received the
+most negative feedback, mainly because of unintended key activation and tracking errors.
+5.8 Integrated Discussion
+Press provided the strongest overall balance across performance, workload, and
+preference. It achieved the highest Gross and Effective WPM, high and consistent
+accuracy, the lowest overall Raw NASA–TLX score, and the highest overall preference
+
+===== PDF PAGE 60 =====
+
+5.8. INTEGRATED DISCUSSION53
+Figure 5.4: Participant selections in the final method comparison questionnaire.
+ranking. Its main limitation was the large number of character-level actions required for
+direct character entry.
+Swipe offered a different advantage. Although slower than Press, it required fewer
+recorded input actions because a single gesture could enter a complete word.
+Participants also rated Swipe highly for comfort, enjoyment, candidate coverage,
+selection ease, and helpfulness. This makes Swipe suitable for longer words where
+character-by-character input requires more actions. However, its higher backspace count
+shows that recognition and correction still need improvement.
+Dwell prioritised accuracy and low effort over speed. It achieved the highest mean
+attempted-prefix accuracy, required few corrections, and produced relatively low
+workload and fatigue. However, the fixed 0.6-second activation delay reduced WPM and
+sentence completion.
+StickTap and the two hand-tracked methods showed greater problems with input
+precision. StickTap produced moderate speed but high workload and frequent
+correction. HandTouch achieved high final attempted-prefix accuracy, but participants
+still reported hand-tracking accuracy problems and gave it relatively low subjective
+ratings. Frequent correction also suggests that final accuracy alone does not reflect the
+effort required during input. HandTouch10 showed the largest variation between
+participants and received the lowest preference ratings. Unintended key activation and
+tracking errors were the main reported problems.
+
+===== PDF PAGE 61 =====
+
+54CHAPTER 5. TESTING AND EV ALUATION
+These results suggest three design directions. First, Press provides a reliable
+controller-based baseline for VR text entry. Second, Press and Swipe could be
+combined: Press supports precise character entry, while Swipe can reduce input actions
+for longer words. Third, using more tracked fingers does not necessarily improve text
+entry. Reliable multi-finger input requires better contact rejection, fingertip tracking,
+calibration, and surface stability.
+5.9 Chapter Summary
+This chapter compared six VR text-entry methods across performance, workload, and
+user preference. Press achieved the strongest overall balance, while Swipe also
+performed well and was valued for comfort and efficiency. Dwell provided accurate and
+low-fatigue input at a lower speed. The hand-tracked methods, especially HandTouch10,
+showed greater problems with tracking accuracy, correction, workload, and preference.
+Overall, Press and Swipe were the most practical methods, while multi-finger hand
+tracking requires further improvement.
+
+===== PDF PAGE 62 =====
+
+Chapter 6
+Conclusions and Future Work
+6.1 Conclusions
+This project designed, implemented, and evaluated six virtual QWERTY text-entry
+methods within a shared VR application. The system provided a consistent keyboard,
+trial procedure, data-recording framework, and questionnaire process for comparing
+controller-based, swipe-based, and hand-tracked input. A within-subjects user study
+with ten participants produced both objective performance data and subjective feedback
+for all six methods.
+The evaluation showed that practical VR text entry depends on several factors,
+including typing speed, accuracy, correction effort, workload, tracking reliability, and
+user preference. Press provided the most dependable overall interaction in the current
+implementation. Swipe also showed strong potential for efficient word-level input and
+was positively received by participants. Dwell provided stable and accurate input with a
+lower typing speed. The hand-tracked methods showed greater dependence on tracking
+and contact accuracy. Increasing the number of active fingers did not automatically
+improve text-entry performance.
+The project therefore demonstrates the value of comparing different interaction
+approaches within the same VR keyboard and evaluation framework. Press and Swipe
+provide the strongest basis for further development in the current system. The results
+also identify tracking, contact detection, keyboard configuration, and word prediction as
+important areas for improving future VR text-entry interfaces.
+6.2 Future Work
+Future work should improve both the input methods and the experimental design.
+Swipe recognition could be improved through better candidate ranking, contextual
+language information, and a larger vocabulary. The candidate interface could also use
+controller-ray pointing for direct word selection. Future logging should record the
+intended word, candidate positions, and selected candidate to support objective Top-1
+and Top-k recognition measures. StickTap could be improved by adjusting keyboard
+layout, key size, spacing, and overall scale. These changes may reduce unintended
+activations and improve contact precision. The controller-probe position and length
+55
+
+===== PDF PAGE 63 =====
+
+56CHAPTER 6. CONCLUSIONS AND FUTURE WORK
+could also be easier to adjust for individual users. Hand-tracked typing requires better
+tracking and contact detection. Fingertip confidence, contact rejection, individual
+calibration, adaptive activation thresholds, and a surface reference could improve
+stability and reduce unintended key presses. These improvements are particularly
+relevant to HandTouch10, which showed large differences between participants. Previous
+research also indicates that surface alignment can improve mid-air typing and that more
+active fingers do not necessarily improve performance. Future studies should use a larger
+and more diverse sample, counterbalanced method orders, longer practice periods, and
+matched phrase sets. The current fixed sequence does not separate method effects from
+sequence position. Longer sessions and more realistic tasks could also be evaluated,
+including search queries, messages, passwords, forms, and longer text. These tasks would
+help identify where character-level, word-level, and hand-tracked input are most suitable.
+
+===== PDF PAGE 64 =====
+
+References
+[1] J. Adhikary and K. Vertanen. Text entry in virtual environments using speech and
+a midair keyboard.IEEE transactions on visualization and computer graphics,
+27(5):2648–2658, 2021.
+[2] J. Adhikary and K. Vertanen. Typing on midair virtual keyboards: Exploring
+visual designs and interaction styles. InHuman-Computer Interaction –
+INTERACT 2021: 18th IFIP TC 13 International Conference, Bari, Italy, August
+30 – September 3, 2021, Proceedings, Part IV, pages 132–151, Berlin, Heidelberg,
+2021. Springer-Verlag.
+[3] M. Akhoroz and C. Yildirim. Poke typing: Effects of hand-tracking input and key
+representation on mid-air text entry performance in virtual reality. InProceedings
+of the 26th International Conference on Multimodal Interaction, pages 293–301,
+New York, NY, USA, 2024. ACM.
+[4] A. Bhatia, M. H. Mughrabi, D. Abdlkarim, M. Di Luca, M. Gonzalez-Franco,
+K. Ahuja, and H. Seifi. Text entry for xr trove (text): Collecting and analyzing
+techniques for text input in xr. InProceedings of the 2025 CHI Conference on
+Human Factors in Computing Systems, CHI ’25, New York, NY, USA, 2025.
+Association for Computing Machinery.
+[5] X. Bi and S. Zhai. Bayesian touch: a statistical criterion of target selection with
+finger touch. InProceedings of the 26th annual ACM symposium on User interface
+software and technology, pages 51–60, New York, NY, USA, 2013. ACM.
+[6] C. Boletsis and S. Kongsvik. Controller-based text-input techniques for virtual
+reality: An empirical comparison.International Journal of Virtual Reality,
+19(3):2–15, Oct. 2019.
+[7] A. Cao, K. K. Chintamani, A. K. Pandya, and R. D. Ellis. Nasa tlx: Software for
+assessing subjective mental workload.Behavior research methods, 41(1):113–117,
+2009.
+[8] C. M. Carswell, C. H. Lio, R. Grant, M. I. Klein, D. Clarke, W. B. Seales, and
+S. Strup. Hands-free administration of subjective workload scales: Acceptability in
+a surgical training environment.Applied ergonomics, 42(1):138–145, 2010.
+[9] A. Chellali, L. Herfort, G. Loup, and M.-H. Ferrer. The impact of visual and haptic
+feedback on keyboard typing in immersive virtual environments.IEEE transactions
+on visualization and computer graphics, 31(5):2633–2642, 2025.
+57
+
+===== PDF PAGE 65 =====
+
+58REFERENCES
+[10] J. Dudley, H. Benko, D. Wigdor, and P. O. Kristensson. Performance envelopes of
+virtual keyboard text input strategies in virtual reality. In2019 IEEE International
+Symposium on Mixed and Augmented Reality (ISMAR), pages 289–300. IEEE, 2019.
+[11] J. J. Dudley, J. Zheng, A. Gupta, H. Benko, M. Longest, R. Wang, and P. O.
+Kristensson. Evaluating the performance of hand-based probabilistic text input
+methods on a mid-air virtual qwerty keyboard.IEEE transactions on visualization
+and computer graphics, 29(11):4567–4577, 2023.
+[12] J. Goodman, G. Venolia, K. Steury, and C. Parker. Language modeling for soft
+keyboards. InProceedings of the 7th International Conference on Intelligent User
+Interfaces, pages 194–195, New York, NY, USA, 2002. ACM.
+[13] J. Kaufman. google-10000-english: A list of the 10,000 most common english words.
+GitHub repository. Available at:
+https://github.com/first20hours/google-10000-english, n.d. Accessed 14
+August 2026.
+[14] F. Kern, F. Niebling, and M. E. Latoschik. Text input for non-stationary xr
+workspaces: Investigating tap and word-gesture keyboards in virtual and
+augmented reality.IEEE transactions on visualization and computer graphics,
+29(5):2658 – 2669, 2023.
+[15] P. Kourtesis, S. Collina, L. A. A. Doumas, and S. E. MacPherson. Technological
+competence is a pre-condition for effective implementation of virtual reality head
+mounted displays in human neuroscience: A technological review and
+meta-analysis.Frontiers in human neuroscience, 13:342, 2019.
+[16] P.-O. Kristensson and S. Zhai. Shark2: a large vocabulary shorthand writing
+system for pen-based computers. InProceedings of the 17th Annual ACM
+Symposium on User Interface Software and Technology, UIST ’04, page 43–52, New
+York, NY, USA, 2004. Association for Computing Machinery.
+[17] L. A. Leiva, S. Kim, W. Cui, X. Bi, and A. Oulasvirta. How we swipe: A
+large-scale shape-writing dataset and empirical findings. InProceedings of the 23rd
+International Conference on Mobile Human-Computer Interaction, pages 1–13, New
+York, NY, USA, 2021. ACM.
+[18] I. S. MacKenzie and R. W. Soukoreff. Text entry for mobile computing: Models and
+methods, theory and practice.Human-computer interaction, 17(2-3):147–198, 2002.
+[19] A. Mansour and J. Orlosky. Approximated match swiping: Exploring more
+ergonomic gaze-based text input for xr. In2023 IEEE International Symposium on
+Mixed and Augmented Reality Adjunct (ISMAR-Adjunct), pages 141–145, Oct 2023.
+
+===== PDF PAGE 66 =====
+
+REFERENCES59
+[20] D. Rubine. Specifying gestures by example.Computer graphics (New York, N.Y.),
+25(4):329–337, 1991.
+[21] H. Sakoe and S. Chiba. Dynamic programming algorithm optimization for spoken
+word recognition.IEEE transactions on acoustics, speech, and signal processing,
+26(1):43–49, 1978.
+[22] J. Shen, R. Boldu, A. Kalla, M. Glueck, H. B. Surale, and A. Karlson. Ringgesture:
+A ring-based mid-air gesture typing system powered by a deep-learning word
+prediction framework.IEEE transactions on visualization and computer graphics,
+30(11):7441–7451, 2024.
+[23] J. Shen, J. Dudley, and P. O. Kristensson. Fast and robust mid-air gesture typing
+for ar headsets using 3d trajectory decoding.IEEE transactions on visualization
+and computer graphics, 29(11):4622–4632, 2023.
+[24] J. Shen, K. Khaldi, E. Zhou, H. B. Surale, and A. Karlson. Gesture2text: A
+generalizable decoder for word-gesture keyboards in xr through trajectory coarse
+discretization and pre-training.IEEE transactions on visualization and computer
+graphics, 30(11):7118–7128, 2024.
+[25] A. D. Souchet, D. Lourdeaux, A. Pagani, and L. Rebenitsch. A narrative review of
+immersive virtual reality’s ergonomics and risks at the workplace: cybersickness,
+visual fatigue, muscular fatigue, acute stress, and mental overload.Virtual reality :
+the journal of the Virtual Reality Society, 27(1):19–50, 2023.
+[26] M. Speicher, A. M. Feit, P. Ziegler, and A. Krüger. Selection-based text entry in
+virtual reality. InProceedings of the 2018 CHI Conference on Human Factors in
+Computing Systems, pages 1–13, New York, NY, USA, 2018. ACM.
+[27] F. Spiess, P. Weber, and H. Schuldt. Direct interaction word-gesture text input in
+virtual reality. InIEEE International Conference on Artificial Intelligence and
+Virtual Reality (AIVR), pages 140–143. IEEE, 2022.
+[28] H. M. Tusher, S. Mallam, and S. Nazir. A systematic review of virtual reality
+features for skill training.Technology, knowledge and learning, 29(2):843–878, 2024.
+[29] Y. Wang, Y. Wang, X. Li, C. Zhao, N. Ma, and Z. Guo. A comparative study of
+the typing performance of two mid-air text input methods in virtual environments.
+Sensors (Basel, Switzerland), 23(15):6988, 2023.
+[30] J. O. Wobbrock, A. D. Wilson, and Y. Li. Gestures without libraries, toolkits or
+training: a $1 recognizer for user interface prototypes. InProceedings of the 20th
+annual ACM symposium on User interface software and technology, pages 159–168,
+New York, NY, USA, 2007. ACM.
+
+===== PDF PAGE 67 =====
+
+60REFERENCES
+[31] C. Yildirim. Point and select: Effects of multimodal feedback on text entry
+performance in virtual reality.International journal of human-computer
+interaction, 39(19):3815–3829, 2023.
+[32] C. Yu, Y. Gu, Z. Yang, X. Yi, H. Luo, and Y. Shi. Tap, dwell or gesture? exploring
+head-based text entry techniques for hmds. InProceedings of the 2017 CHI
+Conference on Human Factors in Computing Systems, CHI ’17, page 4479–4488,
+New York, NY, USA, 2017. Association for Computing Machinery.
+[33] S. Zhai and P.-O. Kristensson. Shorthand writing on stylus keyboard. InCHI 2003
+: new horizons : conference proceedings, Conference on Human Factors in
+Computing Systems, pages 97–104, New York, NY, USA, 2003. ACM.
+[34] S. Zhai and P. O. Kristensson. The word-gesture keyboard: reimagining keyboard
+interaction.Commun. ACM, 55(9):91–101, Sept. 2012.
+
+===== PDF PAGE 68 =====
+
+Appendices
+61
+
+===== PDF PAGE 69 =====
+
+Appendix A
+User Testing Documents
+A.1 Participant Information Sheet
+1 
+Project Information Sheet 
+Project Title: Design and Evaluation of Six Virtual Reality Text-Entry Methods 
+Information sheet date: 20.07.2026 
+You are invited to take part in a student research project. Before deciding, please read this 
+information carefully. It explains why the study is being carried out and what participation involves. 
+You may discuss it with others and ask any questions before deciding whether to take part. 
+Project aim and duration: This project investigates six ways of entering text on a virtual QWERTY 
+keyboard in immersive virtual reality: controller ray input with trigger confirmation (Press), controller 
+swipe typing (Swipe), direct controller tapping (StickTap), controller ray input with dwell 
+confirmation (Dwell), two-index-finger hand-tracked typing (HandTouch), and ten-finger hand-
+tracked typing (HandTouch10). The study compares typing speed, accuracy, correction behaviour, 
+workload, physical fatigue, usability and preference. One session is expected to take approximately 
+60 minutes, including instructions, practice, questionnaires and rest breaks. 
+Why have I been chosen? You are eligible if you are aged 18 or over, can read English phrases, are 
+familiar with the QWERTY keyboard layout, and have normal or corrected-to-normal vision. Previous 
+VR experience is not required. Approximately 10 participants will be recruited. 
+Do I have to take part? 
+No. Taking part is voluntary. If you decide to participate, you will receive this information sheet and 
+be asked to sign a consent form. You may decline any question, take a break, or stop the session at 
+any time without giving a reason and without negative consequences. You may request withdrawal 
+of your identifiable research data until 20.08.2026 by contacting Junxian Li at 
+jmhz0887@leeds.ac.uk and providing your participant code. After the data have been 
+anonymised and combined with other participants' data, it may no longer be possible to remove 
+them. 
+What will happen if I take part? You will complete a short background questionnaire and receive a 
+VR safety briefing. You will then wear a VR headset and try all six text-entry methods in a fixed order: 
+Press, Swipe, StickTap, Dwell, HandTouch and HandTouch10. Before each method, the system will 
+show instructions and you will type two practice sentences. You will then complete a formal typing 
+trial lasting up to 120 seconds. The same virtual keyboard and task procedure are used for all 
+methods. After each method, you will complete a short workload and experience questionnaire. 
+Swipe has a few additional questions about word prediction. At the end, you will rank the methods 
+and may provide comments. You may rest between methods. 
+Are there any risks or benefits? VR may cause temporary eye strain, tiredness, dizziness, nausea, 
+headache, or hand and arm discomfort. Tell the researcher immediately if you feel uncomfortable. 
+The headset will be removed and the session paused or stopped. There is no guaranteed personal 
+benefit, but your participation may help improve understanding of VR text-entry design.
+ 
+62
+
+===== PDF PAGE 70 =====
+
+A.1. PARTICIPANT INFORMATION SHEET63
+2 
+Will my participation be kept confidential? Yes. Your research data will use a participant code such 
+as P001 rather than your name. The signed consent form will be stored separately from the research 
+data. No audio or video will be recorded. Data will be transferred to secure University storage and 
+will be accessible only to the project student, supervisor and authorised University staff where 
+required for assessment or oversight. Reports will contain only aggregated results and anonymised 
+quotations. Data will be retained and securely deleted in accordance with the approved ethics and 
+data-management arrangements. 
+What information will be collected, and why? The study records your participant code, age range, 
+dominant hand, self-rated keyboard skill, and previous experience of swipe typing, VR, controller 
+pointing and hand tracking. The Unity application records trial duration, entered text, typing speed, 
+errors, corrections, action counts and sentence completion. Questionnaires record perceived 
+workload, fatigue, ease of use, comfort, satisfaction, preference and optional comments. These 
+measures allow the six methods to be compared in terms of both performance and user experience.
+ 
+What will happen to the results of the project? 
+The results will be analysed and included in a report submitted for assessment for the COMP5200M 
+MSc Project in the School of Computer Science at the University of Leeds. Anonymised results may 
+also be discussed in academic presentations or future research. Any future use of anonymised data 
+or quotations will depend on the optional consent choice on the consent form. Individual 
+participants will not be identified.
+ 
+Contact for further information: Project student: Junxian Li, jmhz0887@leeds.ac.uk 
+If you decide to participate, you will receive a copy of this information sheet and a signed consent 
+form to keep. Thank you for taking the time to read this information sheet. 
+
+===== PDF PAGE 71 =====
+
+64APPENDIX A. USER TESTING DOCUMENTS
+A.2 Consent Form
+University of Leeds 
+  
+Consent Form (User Testing) 
+ 
+Title of Project: Design and Evaluation of Six Virtual Reality Text-Entry Methods 
+ 
+Name of Project Student: Junxian Li 
+ 
+Initial the box if you agree with the statement to the left 
+1 I confirm that I have read and understood the project information sheet dated [    . 08. 2026]. I have 
+had the opportunity to ask questions and have received satisfactory answers. 
+ 
+2 I understand that taking part is voluntary. I may decline any question, pause or stop the session 
+without giving a reason and without negative consequences. I may request withdrawal of my 
+identifiable research data until [20.08.2026] by contacting Junxian Li at jmhz0887@leeds.ac.uk and 
+providing my participant code. 
+ 
+3 I understand that the research data will be pseudonymised, that consent forms will be stored 
+separately, and that I will not be identified in the dissertation, presentations or other reports 
+resulting from the project. 
+ 
+4 Optional: I agree that anonymised data and anonymised quotations collected from me may be used 
+in future research or teaching. I understand that I may still take part if I do not initial this box.  
+5 I agree to take part in the project described above.  
+ 
+ 
+________________________ ________________         ____________________ 
+Name of participant Date Signature 
+(or legal representative) 
+ 
+_________________________ ________________         ____________________ 
+Name of person taking consent          Date Signature 
+(if different from project student) 
+To be signed and dated in presence of the participant 
+ 
+_________________________ ________________         ____________________ 
+ Project student Date Signature 
+To be signed and dated in presence of the participant 
+ 
+ 
+  
+
+===== PDF PAGE 72 =====
+
+A.3. PRE-EXPERIMENT QUESTIONNAIRE65
+A.3 Pre-Experiment Questionnaire
+Participant Pre-Experiment Questionnaire
+Participant Pre-Experiment Questionnaire
+Participant ID: ____________________________
+Date: ____________________________
+Instructions:  Please answer the following questions before beginning the VR text-entry experiment. Do not 
+write your name. Tick one response for each question and follow any skip instructions.
+1. What is your dominant hand?
+□ Right-handed □ Left-handed □ Ambidextrous □ Prefer not to say
+2. What is your age range?
+□ 18-20 □ 21-25 □ 26-30
+□ 31-40 □ 41 or above □ Prefer not to say
+3. How would you rate your typing speed on a physical QWERTY keyboard?
+□ Very slow □ Slow □ Moderate □ Fast □ Very fast
+4. How would you rate your typing accuracy on a physical QWERTY keyboard?
+□ Very inaccurate □ Inaccurate □ Moderate □ Accurate □ Very accurate
+5. How often do you use swipe typing on a smartphone or tablet?
+Swipe typing means entering a word by sliding a finger across letters without lifting it between letters.
+□ Never □ Rarely □ Sometimes □ Often □ Very often
+6. How experienced are you with virtual reality systems?
+Examples include Meta Quest, HTC Vive, Valve Index and PlayStation VR.
+No previous 
+experience
+(I have never used VR)
+□
+Very limited experience
+□
+Occasional experience
+□
+Regular experience
+□
+Extensive experience
+□
+If you selected - No previous experience, please skip Questions 7, 8 and 9 and continue to Question 10.
+7. How often do you currently use virtual reality?
+□ Never □ Less than once a 
+month □ 1-3 times a month □ 1-3 times a week □ 4 or more times a 
+week
+8. How experienced are you with controller-based pointing or selection in VR?
+□ No experience □ Limited experience □ Some experience □ Considerable 
+experience □ Extensive experience
+9. How experienced are you with hand tracking in VR?
+□ No experience □ Limited experience □ Some experience □ Considerable 
+experience □ Extensive experience
+10. Are you currently experiencing any health condition or temporary discomfort that could make using 
+VR unsafe or uncomfortable for you?
+Examples include dizziness, nausea, migraine, eye strain, balance problems, or a current hand, wrist, arm, or shoulder injury. 
+You do not need to provide details.
+□ No □ Yes □ Prefer not to say
+
+===== PDF PAGE 73 =====
+
+66APPENDIX A. USER TESTING DOCUMENTS
+A.4 Post-Method Questionnaire
+Participant Post-Method Questionnaire | Raw NASA-TLX
+Participant Post-Method Questionnaire
+Participant ID: ____________________________
+Date: ____________________________
+Method evaluated (tick one):
+□ Press (Controller Trigger) □ Dwell □ Swipe
+□ StickTap □ HandTouch (Two Fingers) □ HandTouch10 (Ten Fingers)
+Instructions: Complete this questionnaire immediately after using the selected text-entry method. For each Raw NASA-TLX dimension, 
+mark one score from 0 to 100. Then answer the additional method-rating questions.
+Section A: Raw NASA Task Load Index (Raw NASA-TLX)
+1. Mental Demand
+How mentally demanding was the text-entry task?
+Consider the amount of thinking, concentration, attention and decision-making required.
+0 = Very low
+Little thought or concentration required
+100 = Very high
+Continuous concentration, planning and checking required
+□
+0
+□
+5
+□
+10
+□
+15
+□
+20
+□
+25
+□
+30
+□
+35
+□
+40
+□
+45
+□
+50
+□
+55
+□
+60
+□
+65
+□
+70
+□
+75
+□
+80
+□
+85
+□
+90
+□
+95
+□
+100
+2. Physical Demand
+How physically demanding was the text-entry task?
+Consider the amount of hand, finger, wrist or arm movement and control required.
+0 = Very low
+Little movement or physical control required
+100 = Very high
+Frequent movement and precise physical control required
+□
+0
+□
+5
+□
+10
+□
+15
+□
+20
+□
+25
+□
+30
+□
+35
+□
+40
+□
+45
+□
+50
+□
+55
+□
+60
+□
+65
+□
+70
+□
+75
+□
+80
+□
+85
+□
+90
+□
+95
+□
+100
+3. Temporal Demand
+How hurried or rushed did you feel while completing the task?
+Rate the time pressure felt during the 120-second test. You were not expected to complete all available sentences.
+0 = Very low
+No sense of time pressure
+100 = Very high
+Strong time pressure and a need to work quickly
+□
+0
+□
+5
+□
+10
+□
+15
+□
+20
+□
+25
+□
+30
+□
+35
+□
+40
+□
+45
+□
+50
+□
+55
+□
+60
+□
+65
+□
+70
+□
+75
+□
+80
+□
+85
+□
+90
+□
+95
+□
+100
+4. Performance
+How successful were you in completing the task?
+Consider how satisfied you were with your actual speed and accuracy.
+0 = Perfect
+My speed and accuracy met my expectations
+100 = Failure
+My speed or accuracy was far below my expectations
+□
+0
+□
+5
+□
+10
+□
+15
+□
+20
+□
+25
+□
+30
+□
+35
+□
+40
+□
+45
+□
+50
+□
+55
+□
+60
+□
+65
+□
+70
+□
+75
+□
+80
+□
+85
+□
+90
+□
+95
+□
+100
+5. Effort
+How hard did you have to work to achieve your level of performance?
+Consider the mental and physical effort required to achieve your actual speed and accuracy.
+0 = Very low
+The task felt easy and required little effort
+100 = Very high
+Maintaining speed and accuracy required considerable effort
+□
+0
+□
+5
+□
+10
+□
+15
+□
+20
+□
+25
+□
+30
+□
+35
+□
+40
+□
+45
+□
+50
+□
+55
+□
+60
+□
+65
+□
+70
+□
+75
+□
+80
+□
+85
+□
+90
+□
+95
+□
+100
+6. Frustration
+How insecure, discouraged, irritated, stressed or annoyed did you feel?
+Consider any irritation, discouragement, stress or frustration experienced during the task.
+0 = Very low
+I felt relaxed and calm
+100 = Very high
+I felt irritated, discouraged, stressed or frustrated
+□
+0
+□
+5
+□
+10
+□
+15
+□
+20
+□
+25
+□
+30
+□
+35
+□
+40
+□
+45
+□
+50
+□
+55
+□
+60
+□
+65
+□
+70
+□
+75
+□
+80
+□
+85
+□
+90
+□
+95
+□
+100
+
+===== PDF PAGE 74 =====
+
+A.4. POST-METHOD QUESTIONNAIRE67
+Participant Post-Method Questionnaire | Raw NASA-TLX
+Section B: Additional Method Ratings
+Instructions: Tick one response for each question. These items are separate from the Raw NASA-TLX workload score.
+7. How easy was it to complete the text-entry tasks using this method?
+□ Very difficult □ Difficult □ Moderate □ Easy □ Very easy
+8. How much physical fatigue did you experience after using this method?
+□ No fatigue □ Slight fatigue □ Moderate fatigue □ Considerable fatigue □ Severe fatigue
+9. How fast did this method feel?
+□ Very slow □ Slow □ Moderate □ Fast □ Very fast
+10. How accurate did this method feel?
+□ Very inaccurate □ Inaccurate □ Moderate □ Accurate □ Very accurate
+11. How comfortable was this method to use?
+□ Very uncomfortable □ Uncomfortable □ Neutral □ Comfortable □ Very comfortable
+12. Overall, how satisfied were you with this method?
+□ Very dissatisfied □ Dissatisfied □ Neutral □ Satisfied □ Very satisfied
+13. Please briefly describe what you liked, disliked or would improve about this method.
+________________________________________________________________________________
+________________________________________________________________________________
+________________________________________________________________________________
+________________________________________________________________________________
+________________________________________________________________________________
+________________________________________________________________________________
+
+===== PDF PAGE 75 =====
+
+68APPENDIX A. USER TESTING DOCUMENTS
+A.5 Swipe-Typing Supplementary Questions
+Swipe-Typing Supplementary Questions
+Swipe-Typing Supplementary Questions
+Participant ID: ____________________________ Date: ____________________________
+Instructions: Complete this questionnaire only after finishing the Swipe text-entry method. Please select 
+one response for each applicable question.
+1. How often was your intended word shown as the first candidate?
+Select “Always” if your intended word appeared as the first candidate every time.
+□  Never □  Rarely □  Sometimes □  Often □  Always
+2. How often was your intended word included in the displayed candidate list? 
+Include occasions when it appeared as the first candidate.
+□  Never □  Rarely □  Sometimes □  Often □  Always
+3. When your intended word was not the first candidate, how easy was it to find and select the 
+correct word from the candidate list?
+ If you selected “Always” in Question 1, please skip this question.
+□  Very difficult □  Difficult □  Neither difficult nor 
+easy □  Easy □  Very easy
+4. How predictable did the word-recognition system feel?
+□  Very unpredictable □  Unpredictable □  Neutral □  Predictable □  Very predictable
+5. To what extent did the candidate list help you enter text more efficiently?
+□  Not at all □  Slightly □  Moderately □  Considerably □  Substantially
+6. Please briefly describe any recognition errors or candidate-list problems you noticed, if any. 
+(Optional)
+________________________________________________________________________________
+________________________________________________________________________________
+________________________________________________________________________________
+________________________________________________________________________________
+
+===== PDF PAGE 76 =====
+
+A.6. FINAL METHOD-COMPARISON QUESTIONNAIRE69
+A.6 Final Method-Comparison Questionnaire
+Final Method-Comparison Questionnaire
+Final Method-Comparison Questionnaire
+Participant ID: ____________________________ Date: ____________________________
+Instructions: Complete this questionnaire after using all six text-entry methods. Base your answers on 
+your overall experience during the study. Please answer Questions 1–10. Questions 11 and 12 are optional 
+and may be left blank.
+1. Rank all six methods by overall preference.
+Use each rank once: 1 = most preferred and 6 = least preferred.
+Text-entry method Rank (1-6)
+Press (Controller Trigger) ________
+Dwell ________
+Swipe ________
+StickTap ________
+HandTouch (Two Fingers) ________
+HandTouch10 (Ten Fingers) ________
+2. Which method felt fastest?
+□ Press (Controller Trigger) □ Dwell □ Swipe
+□ StickTap □ HandTouch (Two Fingers) □ HandTouch10 (Ten Fingers)
+3. Which method felt most accurate?
+□ Press (Controller Trigger) □ Dwell □ Swipe
+□ StickTap □ HandTouch (Two Fingers) □ HandTouch10 (Ten Fingers)
+4. Which method was easiest to learn?
+□ Press (Controller Trigger) □ Dwell □ Swipe
+□ StickTap □ HandTouch (Two Fingers) □ HandTouch10 (Ten Fingers)
+5. Which method was most comfortable?
+□ Press (Controller Trigger) □ Dwell □ Swipe
+□ StickTap □ HandTouch (Two Fingers) □ HandTouch10 (Ten Fingers)
+6. Which method caused the least physical fatigue?
+□ Press (Controller Trigger) □ Dwell □ Swipe
+□ StickTap □ HandTouch (Two Fingers) □ HandTouch10 (Ten Fingers)
+7. Which method was most enjoyable?
+□ Press (Controller Trigger) □ Dwell □ Swipe
+□ StickTap □ HandTouch (Two Fingers) □ HandTouch10 (Ten Fingers)
+8. Which method would you be most likely to use regularly in VR?
+□ Press (Controller Trigger) □ Dwell □ Swipe
+□ StickTap □ HandTouch (Two Fingers) □ HandTouch10 (Ten Fingers)
+9. Please explain the main reason for your most-preferred method.
+________________________________________________________________________________
+________________________________________________________________________________
+
+===== PDF PAGE 77 =====
+
+70APPENDIX A. USER TESTING DOCUMENTS
+Final Method-Comparison Questionnaire
+________________________________________________________________________________
+________________________________________________________________________________
+10. Which method did you prefer the least, and why?
+________________________________________________________________________________
+________________________________________________________________________________
+________________________________________________________________________________
+________________________________________________________________________________
+11. What is the single most important improvement that could be made to any of the six methods? 
+(Optional)
+________________________________________________________________________________
+________________________________________________________________________________
+________________________________________________________________________________
+________________________________________________________________________________
+12. Do you have any other comments about the methods or the study? (Optional)
+________________________________________________________________________________
+________________________________________________________________________________
+________________________________________________________________________________
+Thank you for completing the study.
+
+===== PDF PAGE 78 =====
+
+Appendix B
+Ethical Issues Addressed
+The main ethical considerations in this project concerned informed consent, participant
+safety, privacy, and data management.
+All participants received a Participant Information Sheet before taking part and
+provided written informed consent. Participation was voluntary. Participants could
+decline any question, take a break, or stop the study at any time without giving a
+reason. They could also request withdrawal of their identifiable research data before the
+stated withdrawal deadline.
+The study involved the use of an immersive VR headset, which may cause fatigue,
+discomfort, dizziness, or cybersickness. These risks were explained before the
+experiment. Participants were encouraged to take breaks when needed and could stop
+the session if they experienced discomfort. Practice periods were provided before each
+formal trial to allow participants to become familiar with the interaction methods.
+Participant privacy was protected through pseudonymous participant IDs. Names were
+not stored in the application data or questionnaires, and consent forms were stored
+separately from the research data. Participants were not identified in the dissertation or
+reported results. Research data were stored securely in accordance with the approved
+ethics and data-management procedures.
+The study collected only information required for the evaluation of the VR text-entry
+methods. This included performance measures, questionnaire responses, and participant
+comments. The data were used only for the purposes described in the participant
+information and consent documents.
+71
+
+===== PDF PAGE 79 =====
+
+Appendix C
+External Materials
+The following outlines the assets and resources from third-party sources used during the
+development of this project’s application.
+•The word list used by the Swipe recogniser was compiled and edited from
+google-10000-english.txtand20k.txtin theGoogle 10000 Englishrepository
+by J. Kaufman.
+–Available at:https://github.com/first20hours/google-10000-english
+•The project was created using Unity’s VR project template and includes sample
+assets supplied with XR Interaction Toolkit 3.1.2 and XR Hands 1.5.1.
+These resources were used in addition to the Unity packages and libraries referenced in
+the report: OpenXR Plugin 1.14.1, XR Interaction Toolkit 3.1.2, XR Hands 1.5.1, Input
+System 1.13.1, Universal Render Pipeline 14.0.9 and TextMesh Pro 3.0.9.
+72

@@ -12,7 +12,7 @@ namespace VRTyping.Keyboard.Editor
         const string k_LabelName = "KeyLabel";
         const string k_DemoScene = "Assets/Samples/XR Interaction Toolkit/3.4.1/Starter Assets/DemoScene.unity";
 
-        [MenuItem("Tools/VR Keyboard/Add Or Update Key Labels")]
+
         static void AddOrUpdateSelectedLabels()
         {
             var keyboardRoot = FindKeyboardRoot(Selection.activeTransform);
@@ -26,7 +26,7 @@ namespace VRTyping.Keyboard.Editor
             EditorUtility.DisplayDialog("VR Keyboard", "Updated " + count + " key labels.", "OK");
         }
 
-        [MenuItem("Tools/VR Keyboard/Add Or Update Key Labels", true)]
+ 
         static bool ValidateAddOrUpdateSelectedLabels()
         {
             return Selection.activeTransform != null;

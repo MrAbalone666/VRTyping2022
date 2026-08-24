@@ -6,10 +6,7 @@ using UnityEngine;
 
 namespace VRTyping.Keyboard
 {
-    /// <summary>
-    /// 60Hz 采样得到的单个滑动点。
-    /// position 必须已经投影到二维键盘平面；time 使用 Time.time 或同一时间基准下的秒数。
-    /// </summary>
+
     [Serializable]
     public struct GesturePoint
     {
@@ -23,9 +20,6 @@ namespace VRTyping.Keyboard
         }
     }
 
-    /// <summary>
-    /// 一个候选词及其各模型分数。分数越低表示越匹配；confidence 越高表示越可靠。
-    /// </summary>
     [Serializable]
     public class SwipeCandidate
     {
@@ -46,9 +40,7 @@ namespace VRTyping.Keyboard
         public float speedReward;
     }
 
-    /// <summary>
-    /// 多模型融合权重。除 frequency/speed 是 bonus 外，其余都是距离或惩罚项。
-    /// </summary>
+
     [Serializable]
     public sealed class SwipeScoreWeights
     {
@@ -63,31 +55,25 @@ namespace VRTyping.Keyboard
         [Range(0f, 1f)] public float keyProbability = 0.10f;
     }
 
-    /// <summary>
-    /// 完整的 VR Swipe Typing 识别器。
-    /// 输入整条轨迹，输出 Top-K 候选；不会把轨迹硬转换成“经过了哪些键”再查词典。
-    /// </summary>
     public sealed class SwipeTypingRecognizer : MonoBehaviour
     {
         const int AlphabetSize = 26;
         const float Epsilon = 0.000001f;
 
-        [Header("Vocabulary")]
         public TextAsset m_WordListAsset;
         public int m_MaxWords = 20000;
 
-        [Header("Trajectory Preprocessing")]
+
         public int m_ResampleCount = 64;
         public float m_MinDistance = 0.004f;
         public int m_MovingAverageRadius = 2;
         public float m_OutlierSigma = 3.0f;
         public bool m_NormalizeRotation;
 
-        [Header("Keyboard Model")]
+
         public float m_KeyRadius = 0.095f;
         public float m_KeyProbabilitySigma = 0.075f;
 
-        [Header("Candidate Generation")]
         public int m_DefaultTopK = 5;
         public int m_MaxCandidateTemplates = 2000;
         [Min(16)] public int m_MaxFullyScoredCandidates = 96;
@@ -95,7 +81,6 @@ namespace VRTyping.Keyboard
         public float m_StartMismatchPenalty = 0.18f;
         public float m_EndMismatchPenalty = 0.18f;
 
-        [Header("Scoring")]
         public SwipeScoreWeights m_Weights = new SwipeScoreWeights();
         public int m_DtwWindowRadius = 10;
         public float m_ConfidenceScale = 0.20f;
@@ -132,9 +117,7 @@ namespace VRTyping.Keyboard
             m_DatabaseDirty = true;
         }
 
-        /// <summary>
-        /// 使用已有 SwipeKeyboardLayout 初始化 26 个字母键中心。
-        /// </summary>
+
         public void SetKeyboardLayout(SwipeKeyboardLayout layout)
         {
             if (layout == null)
@@ -143,10 +126,6 @@ namespace VRTyping.Keyboard
             SetKeyboardLayout(layout.keyPositions);
         }
 
-        /// <summary>
-        /// 使用任意二维键盘坐标初始化字母键中心。
-        /// 坐标建议是归一化键盘坐标，用户轨迹和模板必须在同一坐标系。
-        /// </summary>
         public void SetKeyboardLayout(IReadOnlyDictionary<char, Vector2> keyPositions)
         {
             if (keyPositions == null)
@@ -165,25 +144,19 @@ namespace VRTyping.Keyboard
             m_DatabaseDirty = true;
         }
 
-        /// <summary>
-        /// 从代码传入词典。每一项可以是 "word" 或 "word frequency"。
-        /// </summary>
+
         public void SetVocabulary(IEnumerable<string> entries)
         {
             BuildTemplates(ParseVocabulary(entries, m_MaxWords));
         }
 
-        /// <summary>
-        /// 开始一次滑动输入。
-        /// </summary>
+ 
         public void BeginGesture()
         {
             m_CurrentGesture.Clear();
         }
 
-        /// <summary>
-        /// 以约 60Hz 调用，记录当前手指/射线在键盘二维平面上的位置。
-        /// </summary>
+
         public void SampleGesturePoint(Vector2 keyboardPlanePosition)
         {
             SampleGesturePoint(keyboardPlanePosition, Time.time);
@@ -204,9 +177,6 @@ namespace VRTyping.Keyboard
             m_CurrentGesture.Add(new GesturePoint(keyboardPlanePosition, time));
         }
 
-        /// <summary>
-        /// 结束当前滑动并返回 Top-K 候选。
-        /// </summary>
         public List<SwipeCandidate> EndGesture()
         {
             return EndGesture(m_DefaultTopK);
@@ -219,9 +189,7 @@ namespace VRTyping.Keyboard
             return result;
         }
 
-        /// <summary>
-        /// 从整条轨迹直接识别单词。输入点越原始越好，本函数内部会完成清洗、平滑、归一化和重采样。
-        /// </summary>
+
         public List<SwipeCandidate> Recognize(IList<GesturePoint> rawGesture, int topK = 5)
         {
             EnsureInitialized();
@@ -299,8 +267,7 @@ namespace VRTyping.Keyboard
                 if (template == null)
                     continue;
 
-                // Cheap, allocation-free approximation. Full ordered-key DP, DTW,
-                // probability and speed scoring only run for the best shortlist.
+
                 var locationDistance = SwipeTrajectoryUtility.MeanDistance(
                     processed.resampledLocations,
                     template.locationPoints);
@@ -331,9 +298,6 @@ namespace VRTyping.Keyboard
             return a.score.CompareTo(b.score);
         }
 
-        /// <summary>
-        /// 完整预处理：去重复、平滑、去孤立异常点、保留键盘坐标重采样，并生成形状归一化轨迹。
-        /// </summary>
         public ProcessedTrajectory PreprocessTrajectory(IList<GesturePoint> rawGesture)
         {
             var cleaned = RemoveDuplicatePoints(rawGesture, m_MinDistance);
@@ -1108,7 +1072,7 @@ namespace VRTyping.Keyboard
 
         static IEnumerable<string> DefaultVocabulary()
         {
-            // 兜底词表只用于没有指定 TextAsset 时保持系统可运行；正式项目请传入 1000-5000 高频英文词。
+            // 兜底词表只用于没有指定 TextAsset 时保持系统可运行
             return new[]
             {
                 "the", "be", "to", "of", "and", "a", "in", "that", "have", "i",
@@ -1197,10 +1161,7 @@ namespace VRTyping.Keyboard
             }
         }
 
-        /// <summary>
-        /// 预处理后的轨迹：cleaned 保留时间和键盘坐标；resampledLocations 用于位置/方向；
-        /// normalizedShape 用于纯形状匹配。
-        /// </summary>
+
         public sealed class ProcessedTrajectory
         {
             public readonly List<GesturePoint> cleaned;
@@ -1221,9 +1182,7 @@ namespace VRTyping.Keyboard
             }
         }
 
-        /// <summary>
-        /// 由键盘坐标自动生成的词模板，不需要人工绘制。
-        /// </summary>
+
         public sealed class WordTemplate
         {
             public readonly string word;

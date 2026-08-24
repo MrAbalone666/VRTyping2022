@@ -17,86 +17,78 @@ namespace VRTyping.Keyboard
             Z,
         }
 
-        [Header("References")]
-        [Tooltip("Controller or anchor transform that defines the stick origin and forward direction.")]
+       
         // 跟随目标，通常是控制器或手部锚点；它的位置和 forward 决定 stick 的方向。
         public Transform m_FollowTarget;
 
-        [Tooltip("Controller hand driven by this probe. Auto infers from the follow target hierarchy.")]
+
         public VRKeyboardControllerHand m_ControllerHand = VRKeyboardControllerHand.Auto;
 
-
-        [Tooltip("Optional child used as the visible rod between the controller and the probe tip.")]
         // 可选的杆状可视物，用来显示从控制器到探针尖端的 stick。
         public Transform m_StickVisual;
 
-
-        [Tooltip("Optional child used as the visible tip of the probe.")]
         // 可选的探针尖端可视物。
         public Transform m_ProbeVisual;
 
-
-        [Tooltip("Optional thumbstick action used to adjust stick length at runtime.")]
         // 可选输入，例如摇杆 Y 轴，用于运行时调节 stick 长度。
         public InputActionReference m_LengthAdjustAction;
 
-        [Header("Stick Settings")]
 
         [Min(0f)]
-        [Tooltip("Delay in seconds before the stick visual and probe collider become active.")]
+
         // 启用后延迟一段时间再显示和启用碰撞，避免刚切换模式时立刻误触。
         public float m_ActivationDelay = 0f;
 
 
         [Min(0.01f)]
-        [Tooltip("Fixed distance from the follow target to the probe tip.")]
+
         // 从跟随目标到探针尖端的当前距离。
         public float m_StickLength = 0.18f;
 
 
         [Min(0.01f)]
-        [Tooltip("Shortest allowed stick length when runtime adjustment is enabled.")]
+
         // 运行时调节 stick 长度时允许的最短长度。
         public float m_MinStickLength = 0.08f;
 
 
         [Min(0.01f)]
-        [Tooltip("Longest allowed stick length when runtime adjustment is enabled.")]
+
         // 运行时调节 stick 长度时允许的最长长度。
         public float m_MaxStickLength = 0.3f;
 
 
         [Min(0f)]
-        [Tooltip("How fast the stick length changes per second when pushing the thumbstick vertically.")]
+
         // 摇杆竖直方向输入改变 stick 长度的速度。
         public float m_StickLengthAdjustSpeed = 0.2f;
 
 
         [Range(0f, 1f)]
-        [Tooltip("Ignore small thumbstick movements under this absolute Y threshold.")]
+
         // 摇杆死区，忽略轻微抖动。
         public float m_LengthAdjustDeadzone = 0.2f;
 
 
         [Min(0f)]
-        [Tooltip("Extra forward offset added before the stick begins.")]
+
         // stick 起点相对跟随目标向前偏移一点，避免从手柄内部开始。
         public float m_BaseForwardOffset = 0.02f;
 
 
         [Min(0.001f)]
-        [Tooltip("Rendered thickness of the optional stick visual.")]
+
         // 杆状可视物的厚度。
         public float m_StickThickness = 0.006f;
 
 
         [Min(0.001f)]
-        [Tooltip("Length represented by a scale of 1 on the stick visual's primary axis.")]
+
         // 可视物主轴缩放为 1 时代表的实际长度，用于把世界距离换算成本地 scale。
         public float m_StickVisualBaseLength = 1f;
 
 
-        [Tooltip("Axis used by the stick visual to represent its length.")]
+
         // 指定 m_StickVisual 哪个本地轴沿 stick 方向拉伸。
         public StickVisualAxis m_StickVisualAxis = StickVisualAxis.Z;
 

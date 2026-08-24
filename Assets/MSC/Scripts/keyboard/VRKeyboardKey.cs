@@ -19,59 +19,59 @@ namespace VRTyping.Keyboard
     // 单个 VR 键盘按键：负责检测按压深度、移动键帽、触发按键事件，并处理音效和高亮反馈。
     public class VRKeyboardKey : MonoBehaviour
     {
-        [Header("References")]
+
         [SerializeField]
-        [Tooltip("Visual transform that moves when the key is pressed. Leave empty to move this transform directly.")]
+
         Transform m_PressTarget;
 
         [SerializeField]
-        [Tooltip("Trigger collider used to measure press depth.")]
+
         BoxCollider m_PressCollider;
 
-        [Header("Press Settings")]
+
         [SerializeField]
-        [Tooltip("Local axis along which the key moves when pressed.")]
+
         VRKeyboardPressAxis m_PressAxis = VRKeyboardPressAxis.NegativeY;
 
         //[SerializeField]
         [Min(0.001f)]
-        [Tooltip("Maximum local travel distance for the key visual.")]
+
         float m_MaxPressDistance = 0.3f;
 
         [SerializeField]
         [Range(0.1f, 1f)]
-        [Tooltip("How far the key must be pressed, relative to max travel, before On Pressed is fired.")]
+
         float m_PressThreshold = 0.85f;
 
         [SerializeField]
         [Range(0.05f, 0.95f)]
-        [Tooltip("How far the key must return, relative to max travel, before it can be pressed again.")]
+
         float m_ReleaseThreshold = 0.35f;
 
         //[SerializeField]
         [Min(0f)]
-        [Tooltip("How quickly the key visual follows the target depth.")]
+
         float m_MoveSpeed = 10.0f;
 
         [Header("Highlight Feedback")]
         [SerializeField]
-        [Tooltip("Create a TextMeshPro label on top of this key at runtime.")]
+
         bool m_ShowLabel = true;
 
         [SerializeField]
-        [Tooltip("Tint color blended onto the key while input progress builds up.")]
+ 
         Color m_HighlightColor = new Color(1f, 0.85f, 0.2f, 1f);
 
         [SerializeField]
         [Range(0f, 1f)]
-        [Tooltip("How strongly the highlight color is blended onto the key.")]
+
         float m_HighlightStrength = 0.65f;
 
         private AudioSource m_AudioSource;
         private AudioClip m_PressClip;
         private AudioClip m_ReleaseClip;
 
-        [Header("Events")]
+
         [SerializeField]
         UnityEvent m_OnPressed;
 

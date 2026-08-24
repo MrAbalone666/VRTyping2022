@@ -33,7 +33,7 @@ namespace VRTyping.Tests
         // 当前程序运行中的下一个试次编号，从 T001 开始递增。
         static int s_NextTrialNumber = 1;
        
-        [Header("Participant")]
+
         // 参与者编号，例如 P001。
         public string m_ParticipantId = "P001";
 
@@ -49,14 +49,14 @@ namespace VRTyping.Tests
         // 试次无效时记录具体原因；有效试次可以留空。
         public string m_InvalidReason = string.Empty;
 
-        [Header("Input Method")]
+
         // 输入模式选择器，用于自动读取本次测试实际使用的输入方式。
         public VRKeyboardInputModeSelector m_InputModeSelector;
 
         // 找不到输入模式选择器时使用的备用输入方式。
         public VRKeyboardInputMode m_FallbackInputMethod = VRKeyboardInputMode.Press;
 
-        [Header("CSV Export")]
+
         // 测试完成后是否自动导出 CSV。
         public bool m_AutoExportCsv = true;
 
@@ -236,8 +236,7 @@ namespace VRTyping.Tests
         public bool m_UseCustomExportPath = false;
         public string m_CustomExportPath = @"E:\MSC\VRTyping2022\ExperimentResults";
 
-        // CSV 实际保存目录：Application.persistentDataPath/配置的文件夹名。
-        //public string exportDirectory => Path.Combine(Application.persistentDataPath, m_ExportFolderName);
+
         public string exportDirectory
         {
             get
@@ -265,6 +264,7 @@ namespace VRTyping.Tests
         {
             if (m_ParticipantIdInputField != null)
                 m_ParticipantIdInputField.onEndEdit.AddListener(HandleParticipantIdEndEdit);
+            VRKeyboardInputTelemetry.InputStarted += HandleInputStarted;
             VRKeyboardInputTelemetry.PhysicalActionRecorded += HandlePhysicalAction;
         }
 
@@ -273,6 +273,7 @@ namespace VRTyping.Tests
         {
             if (m_ParticipantIdInputField != null)
                 m_ParticipantIdInputField.onEndEdit.RemoveListener(HandleParticipantIdEndEdit);
+            VRKeyboardInputTelemetry.InputStarted -= HandleInputStarted;
             VRKeyboardInputTelemetry.PhysicalActionRecorded -= HandlePhysicalAction;
         }
 
@@ -733,6 +734,14 @@ namespace VRTyping.Tests
         }
 
         // 接收键盘层发布的物理动作，并同时累计试次级和句子级计数。
+        void HandleInputStarted()
+        {
+            // Start the trial at the beginning of a valid Swipe trajectory without
+            // counting an extra physical action. The completed Swipe is counted later.
+            if (m_TrialPrepared && !m_TrialCompleted && !m_TrialStarted)
+                BeginTrial();
+        }
+
         void HandlePhysicalAction(VRKeyboardPhysicalActionKind kind)
         {
             // 只统计已经准备且尚未完成的试次。

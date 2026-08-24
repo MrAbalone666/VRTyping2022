@@ -39,23 +39,20 @@ namespace VRTyping.Tests
         const string PracticeQuestionText =
             "<b>Would you like to practise first?</b>\n\n";
 
-        [Header("Pages")]
+      
         public GameObject m_InstructionCanvas;
         public GameObject m_MethodInstruction;
         public GameObject m_PracticeOrNot;
 
-        [Header("Text")]
         public TMP_Text m_IntroductionText;
         public TMP_Text m_MethodInstructionText;
         public TMP_Text m_PracticeQuestionText;
 
-        [Header("Buttons")]
         public Button m_IntroductionContinueButton;
         public Button m_MethodContinueButton;
         public Button m_PracticeYesButton;
         public Button m_PracticeNoButton;
 
-        [Header("Existing Trial Controls")]
         public TypingTestSession m_TypingSession;
         public Toggle m_IsPracticeToggle;
         public VRKeyboardInputModeSelector m_InputModeSelector;
@@ -205,13 +202,11 @@ namespace VRTyping.Tests
         {
             SynchronizeCurrentMethodFromSelector();
             m_FlowStage = isPractice ? FlowStage.PracticeTrial : FlowStage.FormalTrial;
-            // Keep the selector available during a trial so the input method can be
-            // changed at runtime from the UI dropdown when needed.
+
             SetInputModeDropdownInteractable(true);
             SetPracticeToggleInteractable(true);
 
-            // TypingTestSession is the single mode-switch entry point: it synchronizes
-            // ResultOutput, IsPracticeToggle, the active sentence set and the trial reset.
+
             if (m_TypingSession != null)
             {
                 m_TypingSession.SetPracticeMode(isPractice);
@@ -239,9 +234,7 @@ namespace VRTyping.Tests
 
         void HandlePracticeToggleChanged(bool isPractice)
         {
-            // TypingTestSession also listens to this Toggle and resets the trial with
-            // the matching sentence set. This listener keeps the instruction flow in
-            // sync when the participant changes mode during an active trial.
+
             if (m_FlowStage != FlowStage.PracticeTrial &&
                 m_FlowStage != FlowStage.FormalTrial)
             {
@@ -295,9 +288,6 @@ namespace VRTyping.Tests
 
         void ShowFormalReadyPrompt()
         {
-            // Reset the same input method with the formal sentence set. The test timer
-            // still waits for the first real input, and the instruction page blocks input
-            // until the participant explicitly continues.
             m_FlowStage = FlowStage.FormalReady;
             SetInputModeDropdownInteractable(false);
             SetPracticeToggleInteractable(false);
@@ -409,7 +399,7 @@ namespace VRTyping.Tests
                 case VRKeyboardInputMode.Swipe:
                     m_MethodInstructionText.text =
                         "<b>Current method: Swipe</b>\n" +
-                        "Aim the controller ray at the first letter, hold the trigger and move continuously across the letters of the word. Release the trigger to finish the gesture. The recogniser displays candidate words. Use the right thumbstick to highlight a candidate and press the right trigger to confirm it.";
+                        "Aim the controller ray at the first letter, hold the trigger and move continuously across the letters of the word. Release the trigger to finish the gesture. The recogniser displays candidate words. Use the left thumbstick to highlight a candidate and press the left trigger to confirm it.";
                     break;
 
                 case VRKeyboardInputMode.StickTap:

@@ -27,7 +27,7 @@ namespace VRTyping.Keyboard
             public float releaseTime = float.PositiveInfinity;
         }
 
-        [Header("Output")]
+
         [SerializeField]
         // Swipe 最终要输入文字的目标输入框。
         TMP_InputField m_OutputField;
@@ -36,42 +36,40 @@ namespace VRTyping.Keyboard
         // 滑动过程中显示临时字母序列的预览文本。
         TMP_Text m_SwipePreviewLabel;
 
-        [Header("Swipe Settings")]
+
         [SerializeField]
         [Min(0.01f)]
-        [Tooltip("How long the finger can leave all keys before the current swipe is finalized.")]
+  
         // 探针离开所有按键后等待多久提交，给快速经过缝隙留一点缓冲。
         float m_EndSwipeDelay = 0.08f;
 
-        [SerializeField]
-        [Tooltip("Print the current swipe sequence to the console for debugging.")]
+
+
         // 调试用：提交时打印滑过序列和识别结果。
         bool m_LogSwipeSequence;
 
         [SerializeField]
         [Range(0.1f, 1f)]
-        [Tooltip("How close the probe must get to a key center before the key is accepted into the swipe.")]
+
         // 探针足够靠近键中心时，立即接受该键进入滑动序列。
         float m_KeyCenterAcceptanceRadius = 0.55f;
 
         [SerializeField]
         [Min(0f)]
-        [Tooltip("How long the probe must stay on a non-centered key before it is accepted into the swipe.")]
+
         // 如果没有靠近中心，至少停留这么久才接受该键，减少擦边误触。
         float m_MinSwipeKeyDwellTime = 0.04f;
 
         [SerializeField]
-        [Tooltip("Only record a swipe while the ray controller trigger is held. Releasing the trigger commits the word.")]
         // 为 true 时，只有按住射线扳机才记录 swipe，松开时提交。
         bool m_RequireTriggerForSwipe = true;
 
         [SerializeField]
         [Min(0.05f)]
-        [Tooltip("How long to pause on a letter key to enter the same letter a second time.")]
+
         // 在同一个字母键上停留足够久，允许输入双写字母。
         float m_RepeatedLetterDwellTime = 0.22f;
 
-        [Header("Word Recognition")]
         [SerializeField]
         // 新识别器使用的普通词库文本；模板会根据当前键盘坐标在运行时自动生成。
         TextAsset m_TemplateWordList;
@@ -88,7 +86,7 @@ namespace VRTyping.Keyboard
 
         [SerializeField]
         [Min(32)]
-        [Tooltip("Maximum stored trajectory points. Older points are compacted when this limit is reached.")]
+
         int m_MaxTrajectoryPoints = 256;
 
         [SerializeField]
@@ -96,20 +94,20 @@ namespace VRTyping.Keyboard
         bool m_AppendSpaceAfterSwipeWord = true;
 
         [SerializeField]
-        [Tooltip("Runtime recognizer used by swipe mode. If empty, one is found or added automatically.")]
+
         SwipeTypingRecognizer m_SwipeRecognizer;
 
-        [Header("Candidate Selection")]
+
         [SerializeField]
-        [Tooltip("Optional right thumbstick action. If empty, the right-hand XR primary2DAxis is used.")]
+
         InputActionReference m_CandidateMoveAction;
 
         [SerializeField]
-        [Tooltip("Optional right trigger action used to confirm the highlighted candidate. If empty, the right-hand XR trigger is used.")]
+
         InputActionReference m_CandidateConfirmAction;
 
         [SerializeField]
-        [Tooltip("Show the candidate list after a recognized swipe instead of immediately committing the best match.")]
+
         bool m_ShowCandidatesAfterSwipe = true;
 
         [SerializeField]
@@ -130,7 +128,7 @@ namespace VRTyping.Keyboard
         [SerializeField]
         Color m_CandidateSelectedColor = new Color(0.2f, 0.75f, 1f, 1f);
 
-        [Header("State")]
+
         [SerializeField]
         // CapsLock 当前是否开启，会影响提交字母/单词的大小写。
         bool m_CapsLockEnabled;
@@ -140,13 +138,13 @@ namespace VRTyping.Keyboard
         bool m_ShiftEnabled;
 
         [SerializeField]
-        [Tooltip("Use tab characters instead of spaces when Tab is pressed.")]
+
         // 单键 Tab 输入时，是否使用真实制表符。
         bool m_UseTabCharacter;
 
         [SerializeField]
         [Min(1)]
-        [Tooltip("Number of spaces to insert when Tab is pressed and Use Tab Character is disabled.")]
+
         // 不使用真实 Tab 时，Tab 会转换成几个空格。
         int m_TabSpaces = 4;
 
@@ -198,9 +196,6 @@ namespace VRTyping.Keyboard
             if (m_Keys.Count == 0)
                 RefreshKeyboardReferences();
 
-            // Quest Link can temporarily disable the probe collider when tracking or
-            // the ray endpoint is lost. Refresh only the cheap probe cache here;
-            // rebuilding the word database from Update stalls the main thread.
             if (m_ProbeColliders.Count == 0 && Time.unscaledTime >= m_NextProbeRefreshTime)
             {
                 RefreshProbeReferences();
@@ -225,8 +220,7 @@ namespace VRTyping.Keyboard
                     continue;
                 }
 
-                // Keep temporarily disabled colliders cached so a tracking dropout
-                // cannot trigger a refresh/rebuild loop. Discard its partial trace.
+
                 if (!probeCollider.enabled)
                 {
                     m_ActiveTraces.Remove(probeCollider);
@@ -564,15 +558,18 @@ namespace VRTyping.Keyboard
 
                 trace = new SwipeTrace();
                 m_ActiveTraces.Add(probeCollider, trace);
+
+
+                VRKeyboardInputTelemetry.NotifyInputStarted();
             }
 
-            // Swipe recognition needs the full motion path, including gaps between keys.
+
             AddTrajectoryPoint(trace, probeCollider.bounds.center);
 
             if (touchedKey != null)
             {
                 var keyId = VRKeyboardKeyUtility.GetKeyId(touchedKey);
-                // 仍在接触按键，取消离开倒计时并继续记录轨迹。
+
                 trace.releaseTime = float.PositiveInfinity;
 
                 if (trace.activeKeyId != keyId)
@@ -626,8 +623,7 @@ namespace VRTyping.Keyboard
 
         static void CompactTrajectory(SwipeTrace trace)
         {
-            // Keep the first point, every second interior point and the newest
-            // endpoint. This bounds recognition cost while preserving the path.
+
             for (var i = trace.points.Count - 2; i > 0; i -= 2)
             {
                 trace.points.RemoveAt(i);

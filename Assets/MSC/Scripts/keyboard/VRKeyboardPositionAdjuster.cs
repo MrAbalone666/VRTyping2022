@@ -23,12 +23,10 @@ namespace VRTyping.Keyboard
             Always,
         }
 
-        [Header("Target")]
         public Transform m_TargetRoot;
         public Transform m_ViewTransform;
         [SerializeField] MoveReference m_MoveReference = MoveReference.HeadYaw;
 
-        [Header("Input")]
         public InputActionReference m_LeftMoveAction;
         public InputActionReference m_AdjustButtonAction;
         public InputActionReference m_VerticalButtonAction;
@@ -37,15 +35,14 @@ namespace VRTyping.Keyboard
         public bool m_UseGripAsFallbackAdjustButton = true;
         public bool m_UseThumbstickClickAsFallbackVerticalButton = true;
 
-        [Header("Movement")]
         public float m_MoveSpeed = 0.6f;
         public float m_VerticalMoveSpeed = 0.45f;
         public float m_Deadzone = 0.18f;
-        [Tooltip("Multiplier applied to the left/right joystick axis. Use -1 if the direction is reversed.")]
+
         public float m_HorizontalMultiplier = 1f;
-        [Tooltip("Multiplier applied to the forward/back joystick axis. Use -1 if the direction is reversed.")]
+
         public float m_ForwardMultiplier = 1f;
-        [Tooltip("Print the axis and movement delta read by this component. Enable only while checking controller direction.")]
+
         public bool m_DebugLogMovement;
         
         [SerializeField] VerticalMode m_VerticalMode = VerticalMode.HoldButton;
